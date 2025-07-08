@@ -47,8 +47,9 @@ class Buff:
             pygame.draw.circle(self.image, self.color, (20, 20), 20)
             pygame.draw.rect(self.image, (0, 0, 0), (10, 18, 20, 4))
             pygame.draw.rect(self.image, (0, 0, 0), (18, 10, 4, 20))
-    def draw(self):
+    #def draw(self):
         #if not selt.collected(
+
 
 class Tower:
     def __init__(self):
@@ -211,7 +212,7 @@ while running:
         enemies.append(EnemyLvL1())
         enemy_spawn_timer = 0
 
-    if player.player_score >= 25:
+    if player.player_score >= 5:
         boss.apear()
         boss.move()
 
