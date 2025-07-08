@@ -40,6 +40,9 @@ class Boss:
         self.boss_speed = 0.5
     def apear(self):
          screen.blit(self.boss, (self.boss_x, self.boss_y))
+    def take_damage(self):
+         self.boss_y -= 10
+         self.boss_health -= player.player_attack
     def move(self):
          self.boss_y += self.boss_speed 
               
@@ -56,13 +59,15 @@ class EnemyLvL1(Tower):
         image_path = random.choice(enemy_images)
         if "crok" in image_path:
             self.speed = 6
+            self.health = 2
         elif "sahur" in image_path:
             self.speed = 3
+            self.health = 1
         else:
             self.speed = 4
+            self.health = 3
         self.enemy1 = pygame.image.load(image_path).convert_alpha()
         self.enemy1 = pygame.transform.scale(self.enemy1,(50,50))
-        self.enemy1_speed = 4
         self.side = random.randint(0,3)
         self.enemy1_x = 0
         self.enemy1_y = 0
@@ -82,13 +87,24 @@ class EnemyLvL1(Tower):
         dx = 400 - self.enemy1_x
         dy = 300 - self.enemy1_y
         distance = max(1, (dx**2 + dy**2)**0.5)
-
-        self.enemy1_x += (dx / distance) * self.enemy1_speed
-        self.enemy1_y += (dy / distance) * self.enemy1_speed
+        self.enemy1_x += (dx / distance) * self.speed
+        self.enemy1_y += (dy / distance) * self.speed
     def draw(self):
         screen.blit(self.enemy1,(self.enemy1_x, self.enemy1_y))
+    def take_damage(self):
+        if self.side == 0:
+            self.enemy1_x -= 100
+            self.health -= player.player_attack
+        elif self.side == 1:
+            self.enemy1_y -= 100
+            self.health -= player.player_attack
+        elif self.side == 2:
+            self.enemy1_x += 100
+            self.health -= player.player_attack
+        else:
+            self.enemy1_y += 100
+            self.health -= player.player_attack
     def check_hit(self):
-
         enemy_rect = pygame.Rect(self.enemy1_x, self.enemy1_y, 50, 50)
         return enemy_rect.colliderect(pygame.Rect(400, 300, 200, 200))
     
@@ -99,6 +115,7 @@ class Player(EnemyLvL1):
       self.player_size = 100
       self.player_x = 400
       self.player_y = 500
+      self.player_attack = 1
       self.player_speed = 6
       self.player_score = 0
     def move(self):
@@ -113,9 +130,12 @@ class Player(EnemyLvL1):
               self.player_y += self.player_speed
     def draw(self):
          screen.blit(self.player_image, (self.player_x, self.player_y))
+    def punch(self):
+        enemy_rect = pygame.Rect(enemy.enemy1_x, enemy.enemy1_y, 50, 50)
+        return enemy_rect.colliderect(pygame.Rect(self.player_x,self.player_y,100,100)) and enemy.health != 0
     def kill(self):
         enemy_rect = pygame.Rect(enemy.enemy1_x, enemy.enemy1_y, 50, 50)
-        return enemy_rect.colliderect(pygame.Rect(self.player_x,self.player_y,100,100))
+        return enemy_rect.colliderect(pygame.Rect(self.player_x,self.player_y,100,100)) and enemy.health == 0
 
 
 player = Player()
@@ -146,7 +166,9 @@ while running:
 
         enemy.move()
         enemy.draw()
-        if player.kill() and enemy.check_hit():
+        if player.punch():
+            enemy.take_damage()
+        elif player.kill() and enemy.check_hit():
             screen.blit(boom, (400, 300))
             tower.tower_health -= 1
             enemies.remove(enemy)
