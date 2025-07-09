@@ -37,7 +37,7 @@ class Tower:
         
 class Boss:
     def __init__(self):
-        self.boss = pygame.image.load("prigozin.png").convert_alpha()
+        self.boss = pygame.image.load("boss.png").convert_alpha()
         self.boss = pygame.transform.scale(self.boss,(250,150))
         self.boss_x = 360
         self.boss_y = 0
