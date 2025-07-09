@@ -11,6 +11,7 @@ clock = pygame.time.Clock()
 running = True
 
 background = pygame.image.load("background.png")
+background = pygame.transform.scale(background,(1000,800))
 boom = pygame.image.load("boom.png")
 boom = pygame.transform.scale(boom,(200,200))
 boom_timer = 0
@@ -29,18 +30,18 @@ buff_spawn_timer = 0
 class Tower:
     def __init__(self):
         self.tower_image = pygame.image.load("tower.png")  
-        self.tower_image = pygame.transform.scale(self.tower_image, (200, 200)) 
-        self.tower_x = 400
-        self.tower_y = 300
+        self.tower_image = pygame.transform.scale(self.tower_image, (275, 275)) 
+        self.tower_x = 365
+        self.tower_y = 225
         self.tower_health = 50
-        self.health_bar_length = 200 
+        self.health_bar_length = 275
         self.health_bar_height = 10
         self.tower_max_health = self.tower_health
         self.tower_rect = pygame.Rect(self.tower_x, self.tower_y, 200, 200)
     def draw_health_bar(self, surface):
         health_ratio = self.tower_health / self.tower_max_health
         health_width = int(self.health_bar_length * health_ratio)
-        health_bar_pos = (self.tower_x, self.tower_y  + 215)
+        health_bar_pos = (self.tower_x, self.tower_y  + 260)
         first_color = 0
         second_color = 255
         third_color = 0
@@ -196,7 +197,7 @@ class Enemies(Tower):
             self.health -= player.player_attack
     def check_hit(self):
         enemy_rect = pygame.Rect(self.enemy1_x, self.enemy1_y, 50, 50)
-        return enemy_rect.colliderect(pygame.Rect(400, 300, 200, 200))
+        return enemy_rect.colliderect(pygame.Rect(405, 265, 200, 200))
     
 class Player(Enemies):
     def __init__(self):
