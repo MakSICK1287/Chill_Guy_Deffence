@@ -1,5 +1,6 @@
 import pygame
 import random
+import time 
 
 screen_x = 1000
 screen_y = 800
@@ -19,8 +20,10 @@ boss_spaun_timer = 0
 
 enemies = []
 enemy_spawn_timer = 0
-        
 
+buffs = []
+buff_spawn_timer = 0
+        
 class Tower:
     def __init__(self):
         self.tower_image = pygame.image.load("tower.png")  
@@ -124,6 +127,14 @@ class Player(Enemies):
       self.player_attack = 1
       self.player_speed = 6
       self.player_score = 0
+      self.ultimate_cooldown = 20 
+      self.ultimate_duration = 5 
+      self.ultimate_radius = 200
+      self.ultimate_active = False
+      self.ultimate_start_time = 0
+      self.last_ultimate_time = 0
+      self.ultimate_ready = True
+
     def move(self):
          keys = pygame.key.get_pressed()
          if keys[pygame.K_a] and self.player_x > 0:
@@ -134,8 +145,34 @@ class Player(Enemies):
               self.player_y -= self.player_speed
          if keys[pygame.K_s] and self.player_y < screen_y - self.player_size:
               self.player_y += self.player_speed
+         if keys[pygame.K_SPACE] and self.ultimate_ready:
+            self.activate_ultimate()
+
+    def activate_ultimate(self):
+        current_time = time.time()
+        if current_time - self.last_ultimate_time >= self.ultimate_cooldown:
+            self.ultimate_active = True
+            self.ultimate_start_time = current_time
+            self.last_ultimate_time = current_time
+            self.ultimate_ready = False
+    
+    def update_ultimate(self):
+        current_time = time.time()
+        if self.ultimate_active:
+            if current_time - self.ultimate_start_time >= self.ultimate_duration:
+                self.ultimate_active = False
+        elif current_time - self.last_ultimate_time >= self.ultimate_cooldown:
+            self.ultimate_ready = True
+
     def draw(self):
          screen.blit(self.player_image, (self.player_x, self.player_y))
+         if self.ultimate_active:
+            ultimate_surface = pygame.Surface((self.ultimate_radius*2, self.ultimate_radius*2), pygame.SRCALPHA)
+            pygame.draw.circle(ultimate_surface, (255, 255, 0, 100), 
+                              (self.ultimate_radius, self.ultimate_radius), self.ultimate_radius)
+            screen.blit(ultimate_surface, (self.player_x - self.ultimate_radius + 50, 
+                                         self.player_y - self.ultimate_radius + 50))
+    
     def punch(self):
         enemy_rect = pygame.Rect(enemy.enemy1_x, enemy.enemy1_y, 50, 50)
         return enemy_rect.colliderect(pygame.Rect(self.player_x,self.player_y,100,100)) and enemy.health != 0
@@ -148,12 +185,23 @@ class Player(Enemies):
     def kill(self):
         enemy_rect = pygame.Rect(enemy.enemy1_x, enemy.enemy1_y, 50, 50)
         return enemy_rect.colliderect(pygame.Rect(self.player_x,self.player_y,100,100)) and enemy.health == 0
+    def ultimate_kill(self, enemy):
+        if not self.ultimate_active:
+            return False
+        enemy_center_x = enemy.enemy1_x + 25
+        enemy_center_y = enemy.enemy1_y + 25
+        player_center_x = self.player_x + 50
+        player_center_y = self.player_y + 50
+        
+        distance = ((enemy_center_x - player_center_x)**2 + (enemy_center_y - player_center_y)**2)**0.5
+        return distance <= self.ultimate_radius
 
 
 player = Player()
 tower = Tower()
 
 while running:
+    current_time = time.time()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -172,15 +220,24 @@ while running:
 
         enemy.move()
         enemy.draw()
+
+        if player.ultimate_active and player.ultimate_kill(enemy):
+            player.player_score += 1
+            enemies.remove(enemy)
+            continue
+
         if player.punch():
             enemy.take_damage()
+
         elif player.kill() and enemy.check_hit():
             screen.blit(boom, (400, 300))
             tower.tower_health -= 1
             enemies.remove(enemy)
+
         elif player.kill():
             player.player_score += 1
             enemies.remove(enemy)
+
         elif enemy.check_hit():
             screen.blit(boom, (400, 300))
             tower.tower_health -= 1
@@ -199,14 +256,28 @@ while running:
         elif player.kill_boss():
              bosses.remove(boss)
 
-
+    player.update_ultimate()
+    
     font = pygame.font.SysFont(None, 36)
     health_text = font.render(f"Health: {tower.tower_health}", True, (255, 0, 0))
     screen.blit(health_text, (10, 10))
 
-    font = pygame.font.SysFont(None, 36)
-    health_text = font.render(f"Score: {player.player_score}", True, (0, 0, 255))
-    screen.blit(health_text, (890, 10))
+    score_text = font.render(f"Score: {player.player_score}", True, (0, 0, 255))
+    screen.blit(score_text, (880, 10))
+    
+    if player.ultimate_active:
+        ultimate_status = f"Ultimate: {player.ultimate_duration - (current_time - player.ultimate_start_time):.1f}s"
+        color = (0, 255, 0)
+    elif player.ultimate_ready:
+        ultimate_status = "Ultimate: READY"
+        color = (0, 255, 0)
+    else:
+        cooldown = player.ultimate_cooldown - (current_time - player.last_ultimate_time)
+        ultimate_status = f"Ultimate: {cooldown:.1f}s"
+        color = (255, 0, 0)
+    
+    ultimate_text = font.render(ultimate_status, True, color)
+    screen.blit(ultimate_text, (screen_x // 2 - ultimate_text.get_width() // 2, 10))
 
     pygame.display.flip()
     clock.tick(60)
