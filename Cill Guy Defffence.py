@@ -19,6 +19,8 @@ bosses = []
 boss_spaun_timer = 0
 
 enemies = []
+enemy_buff_timer = 0
+enemy_lvl_timer = 0
 enemy_spawn_timer = 0
 
 buffs = []
@@ -31,9 +33,34 @@ class Tower:
         self.tower_x = 400
         self.tower_y = 300
         self.tower_health = 50
+        self.health_bar_length = 200 
+        self.health_bar_height = 10
+        self.tower_max_health = self.tower_health
         self.tower_rect = pygame.Rect(self.tower_x, self.tower_y, 200, 200)
+    def draw_health_bar(self, surface):
+        health_ratio = self.tower_health / self.tower_max_health
+        health_width = int(self.health_bar_length * health_ratio)
+        health_bar_pos = (self.tower_x, self.tower_y  + 215)
+        first_color = 0
+        second_color = 255
+        third_color = 0
+        if self.tower_health <= self.tower_max_health / 3:
+            first_color = 255
+            second_color = 0
+            third_color = 0
+        elif self.tower_health <= self.tower_max_health / 1.5:
+            first_color = 254
+            second_color =138
+            third_color = 24
+        pygame.draw.rect(surface, (100, 100, 100), 
+                        (*health_bar_pos, self.health_bar_length, self.health_bar_height))
+        pygame.draw.rect(surface, (first_color, second_color, third_color), 
+                        (*health_bar_pos, health_width, self.health_bar_height))
+        pygame.draw.rect(surface, (255, 255, 255), 
+                        (*health_bar_pos, self.health_bar_length, self.health_bar_height), 1)
     def draw(self):
         screen.blit(self.tower_image, (self.tower_x, self.tower_y))
+        self.draw_health_bar(screen)
         
 class Boss:
     def __init__(self):
@@ -42,10 +69,35 @@ class Boss:
         self.boss_x = 360
         self.boss_y = 0
         self.side = random.randint(0,3)
-        self.boss_health = 200
+        self.boss_health = 2000
+        self.boss_max_health = self.boss_health
         self.boss_speed = 1
+        self.health_bar_length = 250  
+        self.health_bar_height = 15 
+    def draw_health_bar(self, surface):
+        first_color = 0
+        second_color = 255
+        third_color = 0
+        if self.boss_health <= self.boss_max_health / 3:
+            first_color = 255
+            second_color = 0
+            third_color = 0
+        elif self.boss_health <= self.boss_max_health / 1.5:
+            first_color = 254
+            second_color =138
+            third_color = 24
+        health_ratio = self.boss_health / self.boss_max_health
+        health_width = int(self.health_bar_length * health_ratio)
+        health_bar_pos = (self.boss_x, self.boss_y - 20)
+        pygame.draw.rect(surface, (100, 100, 100), 
+                        (*health_bar_pos, self.health_bar_length, self.health_bar_height))
+        pygame.draw.rect(surface, (first_color,second_color, third_color), 
+                        (*health_bar_pos, health_width, self.health_bar_height))
+        pygame.draw.rect(surface, (255, 255, 255), 
+                        (*health_bar_pos, self.health_bar_length, self.health_bar_height), 1)
     def apear(self):
         screen.blit(self.boss, (self.boss_x, self.boss_y))
+        self.draw_health_bar(screen)
     def take_damage(self):
         self.boss_y -= 1.3
         self.boss_health -= player.player_attack
@@ -53,6 +105,7 @@ class Boss:
         self.boss_y += self.boss_speed 
     def boss_die(self):
         bosses.remove(boss)
+
 
               
 
@@ -67,19 +120,24 @@ class Enemies(Tower):
         ]
         image_path = random.choice(enemy_images)
         if "crok" in image_path:
-            self.speed = 6
-            self.health = 2
+            self.speed = 5
+            self.health = 20
+            self.max_health = self.health
         elif "sahur" in image_path:
             self.speed = 3
-            self.health = 1
+            self.health = 10
+            self.max_health = self.health
         else:
             self.speed = 4
-            self.health = 3
+            self.health = 30
+            self.max_health = self.health
         self.enemy1 = pygame.image.load(image_path).convert_alpha()
         self.enemy1 = pygame.transform.scale(self.enemy1,(50,50))
         self.side = random.randint(0,3)
         self.enemy1_x = 0
         self.enemy1_y = 0
+        self.health_bar_length = 50  
+        self.health_bar_height = 5 
         if self.side == 0:
             self.enemy1_y = random.randint(0,screen_y - 50)
             self.enemy1_x -= 50
@@ -92,6 +150,28 @@ class Enemies(Tower):
         else :
              self.enemy1_y = screen_y
              self.enemy1_x = random.randint(0,screen_x - 50)
+
+    def draw_health_bar(self, surface):
+        health_ratio = self.health / self.max_health
+        health_width = int(self.health_bar_length * health_ratio)
+        health_bar_pos = (self.enemy1_x, self.enemy1_y - 10)
+        first_color = 0
+        second_color = 255
+        third_color = 0
+        if self.health <= self.max_health / 3:
+            first_color = 255
+            second_color = 0
+            third_color = 0
+        elif self.health <= self.max_health / 1.5:
+            first_color = 254
+            second_color =138
+            third_color = 24
+        pygame.draw.rect(surface, (100, 100, 100), 
+                        (*health_bar_pos, self.health_bar_length, self.health_bar_height))
+        pygame.draw.rect(surface, (first_color, second_color, third_color), 
+                        (*health_bar_pos, health_width, self.health_bar_height))
+        pygame.draw.rect(surface, (255, 255, 255), 
+                        (*health_bar_pos, self.health_bar_length, self.health_bar_height), 1)
     def move(self):
         dx = 400 - self.enemy1_x
         dy = 300 - self.enemy1_y
@@ -100,18 +180,19 @@ class Enemies(Tower):
         self.enemy1_y += (dy / distance) * self.speed
     def draw(self):
         screen.blit(self.enemy1,(self.enemy1_x, self.enemy1_y))
+        self.draw_health_bar(screen)
     def take_damage(self):
         if self.side == 0:
-            self.enemy1_x -= 100
+            self.enemy1_x -= player.player_knockback
             self.health -= player.player_attack
         elif self.side == 1:
-            self.enemy1_y -= 100
+            self.enemy1_y -= player.player_knockback
             self.health -= player.player_attack
         elif self.side == 2:
-            self.enemy1_x += 100
+            self.enemy1_x += player.player_knockback
             self.health -= player.player_attack
         else:
-            self.enemy1_y += 100
+            self.enemy1_y += player.player_knockback
             self.health -= player.player_attack
     def check_hit(self):
         enemy_rect = pygame.Rect(self.enemy1_x, self.enemy1_y, 50, 50)
@@ -124,7 +205,8 @@ class Player(Enemies):
       self.player_size = 100
       self.player_x = 400
       self.player_y = 500
-      self.player_attack = 1
+      self.player_attack = 10
+      self.player_knockback = 150 
       self.player_speed = 6
       self.player_score = 0
       self.ultimate_cooldown = 20 
@@ -175,16 +257,16 @@ class Player(Enemies):
     
     def punch(self):
         enemy_rect = pygame.Rect(enemy.enemy1_x, enemy.enemy1_y, 50, 50)
-        return enemy_rect.colliderect(pygame.Rect(self.player_x,self.player_y,100,100)) and enemy.health != 0
+        return enemy_rect.colliderect(pygame.Rect(self.player_x,self.player_y,100,100)) and enemy.health > 0
     def punch_boss(self):
         boss_rect = pygame.Rect(boss.boss_x, boss.boss_y, 250, 150)
-        return boss_rect.colliderect(pygame.Rect(self.player_x,self.player_y,100,100)) and boss.boss_health != 0
+        return boss_rect.colliderect(pygame.Rect(self.player_x,self.player_y,100,100)) and boss.boss_health > 0
     def kill_boss(self):
         boss_rect = pygame.Rect(boss.boss_x, boss.boss_y, 250, 150)
-        return boss_rect.colliderect(pygame.Rect(self.player_x,self.player_y,100,100)) and boss.boss_health == 0
+        return boss_rect.colliderect(pygame.Rect(self.player_x,self.player_y,100,100)) and boss.boss_health <= 0
     def kill(self):
         enemy_rect = pygame.Rect(enemy.enemy1_x, enemy.enemy1_y, 50, 50)
-        return enemy_rect.colliderect(pygame.Rect(self.player_x,self.player_y,100,100)) and enemy.health == 0
+        return enemy_rect.colliderect(pygame.Rect(self.player_x,self.player_y,100,100)) and enemy.health <= 0
     def ultimate_kill(self, enemy):
         if not self.ultimate_active:
             return False
@@ -215,9 +297,17 @@ while running:
     enemy_spawn_timer += 1
     if enemy_spawn_timer >= 90:
         enemies.append(Enemies())
-        enemy_spawn_timer = 0    
-    for enemy in enemies[:]:
+        enemy_spawn_timer = 0 
 
+    enemy_buff_timer += 1   
+    for enemy in enemies[:]:
+        if enemy_lvl_timer >= 3:
+            continue
+        elif enemy_buff_timer == 1800:
+            enemy_buff_timer = 0
+            enemy.health *= 1.5
+            enemy.speed +=1
+            enemy_lvl_timer += 1
         enemy.move()
         enemy.draw()
 
@@ -264,6 +354,9 @@ while running:
 
     score_text = font.render(f"Score: {player.player_score}", True, (0, 0, 255))
     screen.blit(score_text, (880, 10))
+
+    Lvl_text = font.render(f"Level: {enemy_lvl_timer}" , True ,(219, 172, 52))
+    screen.blit(Lvl_text, (screen_x // 2 - Lvl_text.get_width() // 2, screen_y - Lvl_text.get_height()*1.5))
     
     if player.ultimate_active:
         ultimate_status = f"Ultimate: {player.ultimate_duration - (current_time - player.ultimate_start_time):.1f}s"
