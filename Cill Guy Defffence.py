@@ -187,7 +187,7 @@ while running:
             enemies.remove(enemy)
 
     boss_spaun_timer +=1
-    if boss_spaun_timer == 600:
+    if boss_spaun_timer == 1800:
         boss_spaun_timer = 0
         bosses.append(Boss())
 
