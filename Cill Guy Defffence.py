@@ -89,6 +89,7 @@ class Boss:
         self.side = random.randint(0,3)
         self.boss_x = 0
         self.boss_y = 0
+        self.is_buffed = False
         if self.side == 0:
             self.boss_x = 0
             self.boss_y = tower.tower_y
@@ -540,6 +541,14 @@ while running:
             boss.length = 225
             boss.height = 200
             boss.boss_animation()
+        if enemy_lvl_timer == 2 and not(boss.is_buffed):
+            boss.boss_health *= 2
+            boss.boss_max_health = boss.boss_health
+            boss.is_buffed = True
+        if enemy_lvl_timer == 3 and not(boss.is_buffed):
+            boss.boss_health *= 3
+            boss.boss_max_health = boss.boss_health
+            boss.is_buffed = True
 
         if boss_animation_timer >= 60:
             boss_animation_timer = 0
