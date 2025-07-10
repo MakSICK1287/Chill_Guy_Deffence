@@ -32,6 +32,8 @@ boom_timer = 0
 boss_boom_timer = 0
 boss_animation_timer = 0
 
+
+player_animation_timer = 0
 animation_timer = 0
 
 bosses = []
@@ -312,6 +314,8 @@ class Player:
       self.player_knockback = 150 
       self.player_speed = 6
       self.player_score = 0
+      self.player_turn_r = True
+      self.is_still = True
       self.ultimate_cooldown = 20 
       self.ultimate_duration = 5 
       self.ultimate_radius = 200
@@ -365,11 +369,16 @@ class Player:
     def draw(self):
         keys = pygame.key.get_pressed()
         if keys[pygame.K_d]:
+           self.player_turn_r = True
            screen.blit(self.player_image_r, (self.player_x, self.player_y))
         elif keys[pygame.K_a]:
+           self.player_turn_r = False
            screen.blit(self.player_image_l, (self.player_x, self.player_y))
         else:
-            screen.blit(self.player_image_l, (self.player_x, self.player_y))
+            if self.player_turn_r:
+                screen.blit(self.player_image_r, (self.player_x, self.player_y))
+            elif not self.player_turn_r:
+                screen.blit(self.player_image_l, (self.player_x, self.player_y))
         if self.ultimate_active:
            ultimate_surface = pygame.Surface((self.ultimate_radius*2, self.ultimate_radius*2), pygame.SRCALPHA)
            pygame.draw.circle(ultimate_surface, (255, 255, 0, 100), 
@@ -377,6 +386,22 @@ class Player:
            screen.blit(ultimate_surface, (self.player_x - self.ultimate_radius + 50, 
                                         self.player_y - self.ultimate_radius + 50))
     
+    def animation(self):
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_d]:
+           self.player_turn_r = True
+           animation = pygame.transform.scale(self.player_image_r, (110,90))
+           screen.blit(animation, (self.player_x, self.player_y))
+        elif keys[pygame.K_a]:
+           self.player_turn_r = False
+           animation = pygame.transform.scale(self.player_image_l, (110,90))
+           screen.blit(animation, (self.player_x, self.player_y))
+        else:
+            if self.player_turn_r:
+                screen.blit(self.player_image_r, (self.player_x, self.player_y))
+            elif not self.player_turn_r:
+                screen.blit(self.player_image_l, (self.player_x, self.player_y))
+
     def draw_stand(self):
         keys = pygame.key.get_pressed()
         if keys[pygame.K_d]:
@@ -432,7 +457,15 @@ while running:
 
     screen.blit(background, (0, 0))
     tower.draw()
-    player.draw()
+
+    player_animation_timer +=1
+    if player_animation_timer <= 8:
+        player.draw()
+    else:
+        player.animation()
+
+    if player_animation_timer >= 16:
+        player_animation_timer = 0
 
     enemy_spawn_timer += 1
     if enemy_spawn_timer >= 90:
