@@ -5,10 +5,24 @@ import time
 screen_x = 1000
 screen_y = 800
 pygame.init()
+pygame.mixer.init()
 screen = pygame.display.set_mode((screen_x, screen_y))
 pygame.display.set_caption("Chill Guy Deffence")
 clock = pygame.time.Clock()
 running = True
+
+enemy_die_sound = pygame.mixer.Sound("enemy_die.mp3")
+tower_hit = pygame.mixer.Sound("hit_tower.mp3")
+tower_hit.set_volume(0.5)
+ult_sound = pygame.mixer.Sound("ultimate.mp3")
+ult_sound.set_volume(0.3)
+punch_sound = pygame.mixer.Sound("punch.mp3")
+punch_sound.set_volume(0.3)
+boss_punch_sound = pygame.mixer.Sound("boss_punch.mp3")
+boss_punch_sound.set_volume(0.5)
+boss_punch_timer = 0
+steps_sound = pygame.mixer.Sound("steps.mp3")
+steps_sound_timer = 300
 
 background = pygame.image.load("background.png")
 background = pygame.transform.scale(background,(screen_x,screen_y))
@@ -16,6 +30,7 @@ boom = pygame.image.load("boom.png")
 boom = pygame.transform.scale(boom,(275,275))
 boom_timer = 0
 boss_boom_timer = 0
+boss_animation_timer = 0
 
 animation_timer = 0
 
@@ -69,8 +84,8 @@ class Tower:
         
 class Boss:
     def __init__(self):
-        self.boss = pygame.image.load("boss.png").convert_alpha()
-        self.boss = pygame.transform.scale(self.boss,(225,200))
+        self.boss_r = pygame.image.load("boss_r.png").convert_alpha()
+        self.boss_l = pygame.image.load("boss_l.png").convert_alpha()
         self.side = random.randint(0,3)
         self.boss_x = 0
         self.boss_y = 0
@@ -86,9 +101,24 @@ class Boss:
         else: 
             self.boss_x = tower.tower_x
             self.boss_y = screen_y - 200
+
+        if self.side == 0:
+            self.boss_y = random.randint(0,screen_y - 225)
+            self.boss_x -= 225
+        elif self.side == 1: 
+            self.boss_y -= 200
+            self.boss_x = random.randint(0,screen_x - 225)
+        elif self.side == 2:
+             self.boss_y = random.randint(0,screen_y - 200)
+             self.boss_x = screen_x
+        else :
+             self.boss_y = screen_y
+             self.boss_x = random.randint(0,screen_x - 225)
         self.boss_health = 2000
         self.boss_max_health = self.boss_health
         self.boss_speed = 1
+        self.length = 225
+        self.height = 200
         self.health_bar_length = 250  
         self.health_bar_height = 15 
     def draw_health_bar(self, surface):
@@ -112,9 +142,16 @@ class Boss:
                         (*health_bar_pos, health_width, self.health_bar_height))
         pygame.draw.rect(surface, (255, 255, 255), 
                         (*health_bar_pos, self.health_bar_length, self.health_bar_height), 1)
-    def apear(self):
-           screen.blit(self.boss, (self.boss_x, self.boss_y))
-           self.draw_health_bar(screen)
+    def boss_animation(self):
+        if self.dx > 0:
+            boss_animation = pygame.transform.scale(self.boss_r,(self.length,self.height))
+            screen.blit(boss_animation, (self.boss_x, self.boss_y))
+            self.draw_health_bar(screen)
+        else:
+            boss_animation = pygame.transform.scale(self.boss_l,(self.length,self.height))
+            screen.blit(boss_animation, (self.boss_x, self.boss_y))
+            self.draw_health_bar(screen)
+
     def take_damage(self):
         if self.side == 0:
             self.boss_x -= 1.3
@@ -129,14 +166,11 @@ class Boss:
             self.boss_y += 1.3
             self.boss_health -= player.player_attack
     def move(self):
-        if self.side == 0:
-            self.boss_x += self.boss_speed 
-        elif self.side == 1:
-            self.boss_y += self.boss_speed
-        elif self.side == 2:
-            self.boss_x -= self.boss_speed
-        else:
-            self.boss_y -= self.boss_speed
+        self.dx = 400 - self.boss_x
+        self.dy = 300 - self.boss_y
+        distance = max(1, (self.dx**2 + self.dy**2)**0.5)
+        self.boss_x += (self.dx / distance) * self.boss_speed
+        self.boss_y += (self.dy / distance) * self.boss_speed
     def boss_die(self):
         bosses.remove(boss)
     def check_hit(self):
@@ -160,6 +194,8 @@ class Enemies:
             self.speed = 5
             self.health = 20
             self.max_health = self.health
+            self.final_health = 80
+            self.is_buffed = False
         elif "sahur" in self.image_path:
             self.enemy_image_r = pygame.image.load("sahur_r.png")  
             self.enemy_image_r = pygame.transform.scale(self.enemy_image_r, (50, 50))
@@ -168,6 +204,8 @@ class Enemies:
             self.speed = 3
             self.health = 10
             self.max_health = self.health
+            self.final_health = 40
+            self.is_buffed = False
         else:
             self.enemy_image_r = pygame.image.load("shark_r.png")  
             self.enemy_image_r = pygame.transform.scale(self.enemy_image_r, (50, 50))
@@ -176,6 +214,8 @@ class Enemies:
             self.speed = 4
             self.health = 30
             self.max_health = self.health
+            self.final_health = 120
+            self.is_buffed = False
         self.side = random.randint(0,3)
         self.enemy1_x = 0
         self.enemy1_y = 0
@@ -188,11 +228,11 @@ class Enemies:
             self.enemy1_y -= 50
             self.enemy1_x = random.randint(0,screen_x - 50)
         elif self.side == 2:
-             self.enemy1_y = random.randint(0,screen_y - 50)
-             self.enemy1_x = screen_x
+            self.enemy1_y = random.randint(0,screen_y - 50)
+            self.enemy1_x = screen_x
         else :
-             self.enemy1_y = screen_y
-             self.enemy1_x = random.randint(0,screen_x - 50)
+            self.enemy1_y = screen_y
+            self.enemy1_x = random.randint(0,screen_x - 50)
 
     def draw_health_bar(self, surface):
         health_ratio = self.health / self.max_health
@@ -260,6 +300,10 @@ class Player:
       self.player_image_r = pygame.transform.scale(self.player_image_r, (100, 100))
       self.player_image_l = pygame.image.load("image_l.png")  
       self.player_image_l = pygame.transform.scale(self.player_image_l, (100, 100))
+      self.player_stand_r = pygame.image.load("stand_r.png")  
+      self.player_stand_r = pygame.transform.scale(self.player_stand_r, (100, 110))
+      self.player_stand_l = pygame.image.load("stand_l.png")  
+      self.player_stand_l = pygame.transform.scale(self.player_stand_l, (100, 110))
       self.player_size = 100
       self.player_x = 400
       self.player_y = 500
@@ -274,21 +318,34 @@ class Player:
       self.ultimate_start_time = 0
       self.last_ultimate_time = 0
       self.ultimate_ready = True
+      self.is_plaing = False
+
+    def is_moving(self):
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_a]:
+            return True
+        if keys[pygame.K_d]:
+            return True
+        if keys[pygame.K_w]:
+            return True
+        if keys[pygame.K_s]:
+            return True
 
     def move(self):
-         keys = pygame.key.get_pressed()
-         if keys[pygame.K_a] and self.player_x > 0:
-              self.player_x -= self.player_speed
-         if keys[pygame.K_d] and self.player_x < screen_x - self.player_size:
-              self.player_x += self.player_speed
-         if keys[pygame.K_w] and self.player_y > 0:
-              self.player_y -= self.player_speed
-         if keys[pygame.K_s] and self.player_y < screen_y - self.player_size:
-              self.player_y += self.player_speed
-         if keys[pygame.K_SPACE] and self.ultimate_ready:
-            self.activate_ultimate()
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_a] and self.player_x > 0:
+            self.player_x -= self.player_speed
+        if keys[pygame.K_d] and self.player_x < screen_x - self.player_size:
+            self.player_x += self.player_speed
+        if keys[pygame.K_w] and self.player_y > 0:
+            self.player_y -= self.player_speed
+        if keys[pygame.K_s] and self.player_y < screen_y - self.player_size:
+            self.player_y += self.player_speed
+        if keys[pygame.K_SPACE] and self.ultimate_ready:
+           self.activate_ultimate()
 
     def activate_ultimate(self):
+        ult_sound.play()
         current_time = time.time()
         if current_time - self.last_ultimate_time >= self.ultimate_cooldown:
             self.ultimate_active = True
@@ -319,6 +376,15 @@ class Player:
            screen.blit(ultimate_surface, (self.player_x - self.ultimate_radius + 50, 
                                         self.player_y - self.ultimate_radius + 50))
     
+    def draw_stand(self):
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_d]:
+           screen.blit(self.player_stand_r, (self.player_x, self.player_y - 90))
+        elif keys[pygame.K_a]:
+           screen.blit(self.player_stand_l, (self.player_x, self.player_y - 90))
+        else:
+            screen.blit(self.player_stand_l, (self.player_x, self.player_y - 90))
+
     def punch(self):
         enemy_rect = pygame.Rect(enemy.enemy1_x, enemy.enemy1_y, 50, 50)
         return enemy_rect.colliderect(pygame.Rect(self.player_x,self.player_y,100,100)) and enemy.health > 0
@@ -355,6 +421,14 @@ while running:
         running = False
     screen.fill((0, 0, 0))
     player.move()
+
+    steps_sound_timer += 1
+    if player.is_moving() and  steps_sound_timer >= 300:
+        steps_sound.play()  
+        steps_sound_timer = 0 
+    if not(player.is_moving()):
+        steps_sound.stop()
+
     screen.blit(background, (0, 0))
     tower.draw()
     player.draw()
@@ -369,53 +443,107 @@ while running:
     for enemy in enemies[:]:
 
         enemy.move()
-        if animation_timer <= 180:
+        if animation_timer <= 10:
             enemy.draw()
-        elif animation_timer <= 360:
+        else:
             enemy.animation()
+
+        if animation_timer >= 20:
             animation_timer = 0
 
         if enemy.health == 0:
+            enemy_die_sound.play()
             player.player_score += 1
             enemies.remove(enemy)
-        if enemy_buff_timer == 1800:
-            enemy_buff_timer = 0
-            enemy.health *= 2
+
+
+        if enemy_buff_timer >= 1800 and enemy_lvl_timer == 1 and (not enemy.is_buffed):
+            enemy.health += enemy.health
+            enemy.is_buffed = True
             enemy.max_health = enemy.health
-            enemy.speed +=1
+            enemy.speed += 1
+        if enemy_buff_timer >= 3600 and enemy_lvl_timer == 2 and (not enemy.is_buffed):
+            enemy.health += enemy.health * 2
+            enemy.is_buffed = True
+            enemy.max_health = enemy.health
+            enemy.speed += 1
+        if enemy_buff_timer >= 5400 and enemy_lvl_timer == 3 and (not enemy.is_buffed):
+            enemy.health += enemy.health * 3
+            enemy.is_buffed = True
+            enemy.max_health = enemy.health
+            enemy.speed += 1
+
+        if enemy_buff_timer == 1800 and enemy_lvl_timer == 0:
             enemy_lvl_timer += 1
+        if enemy_buff_timer == 3600 and  enemy_lvl_timer == 1:
+            enemy_lvl_timer += 1
+        if enemy_buff_timer == 5400 and enemy_lvl_timer == 2:
+            enemy_lvl_timer += 1    
 
         if player.ultimate_active and player.ultimate_kill(enemy):
+            enemy_die_sound.play()
             player.player_score += 1
             enemies.remove(enemy)
             continue
 
         if player.punch():
             enemy.take_damage()
+            punch_sound.play()
         elif player.kill() and enemy.check_hit():
             tower.tower_health -= 1
+            tower_hit.play()
             enemies.remove(enemy)
         elif player.kill():
+            enemy_die_sound.play()
             player.player_score += 1
             enemies.remove(enemy)
         elif enemy.check_hit():
             tower.tower_health -= 1
+            tower_hit.play()
             boom_timer = 180
             enemies.remove(enemy)
-            
+
         if boom_timer >= 60:
             screen.blit(boom, (365, 225))
             boom_timer -= 4
 
     boss_spaun_timer +=1
     boss_attack_cooldown += 1
+    boss_animation_timer +=1
     if boss_spaun_timer == 1800:
         boss_spaun_timer = 0
         bosses.append(Boss())
-
+    boss_punch_timer += 1
     for boss in bosses[:]:
         boss.move()
-        boss.apear()
+        if boss_animation_timer <= 10:
+            boss.length = 225
+            boss.height = 200
+            boss.boss_animation()
+        elif boss_animation_timer <= 20:
+            boss.length = 250
+            boss.height = 180
+            boss.boss_animation()
+        elif boss_animation_timer <= 30:
+            boss.length = 275
+            boss.height = 160
+            boss.boss_animation()
+        elif boss_animation_timer <= 40:
+            boss.length = 275
+            boss.height = 160
+            boss.boss_animation()
+        elif boss_animation_timer <= 50:
+            boss.length = 250
+            boss.height = 180
+            boss.boss_animation()
+        else:
+            boss.length = 225
+            boss.height = 200
+            boss.boss_animation()
+
+        if boss_animation_timer >= 60:
+            boss_animation_timer = 0
+        
         if boss.check_hit():
             boss.boss_speed = 0
             if boss_boom_timer > 0:
@@ -425,13 +553,19 @@ while running:
         if boss_attack_cooldown >= 180 and boss.check_hit():
             boss_attack_cooldown = 0
             boss_boom_timer = 60
+            tower_hit.play()
             tower.tower_health -= 2
 
         if player.punch_boss():
+            player.draw_stand()
+            if boss_punch_timer >= 180:
+                boss_punch_sound.play()
+                boss_punch_timer = 0
             boss.take_damage()
             boss.boss_speed = 1
         elif player.kill_boss():
             player.player_score += 10
+            boss_punch_sound.stop()
             bosses.remove(boss)
 
     player.update_ultimate()
