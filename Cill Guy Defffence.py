@@ -18,6 +18,7 @@ clock = pygame.time.Clock()
 MENU = 0
 GAME = 1
 SETTINGS = 2
+GAME_OVER = 3 
 game_state = MENU
 
 fullscreen = False
@@ -74,7 +75,9 @@ def create_buttons():
         'exit': Button(0.5, 0.55, 0.2, 0.08, "Exit", (100, 0, 0), (150, 0, 0)),
         'window': Button(0.5, 0.4, 0.2, 0.08, "Window", (0, 100, 100), (0, 150, 150)),
         'fullscreen': Button(0.5, 0.5, 0.2, 0.08, "Full Screen", (100, 0, 100), (150, 0, 150)),
-        'back': Button(0.5, 0.6, 0.2, 0.08, "Back", (100, 100, 100), (150, 150, 150))
+        'back': Button(0.5, 0.6, 0.2, 0.08, "Back", (100, 100, 100), (150, 150, 150)),
+        'restart': Button(0.5, 0.45, 0.2, 0.08, "Restart", (0, 100, 0), (0, 150, 0)),
+        'main_menu': Button(0.5, 0.55, 0.2, 0.08, "Main Menu", (100, 0, 0), (150, 0, 0))
     }
 
 buttons = create_buttons()
@@ -108,38 +111,18 @@ def get_scaled_mouse_pos():
     return (scaled_x, scaled_y)
 
 def load_image_safe(filename, default_size=(100, 100)):
-    try:
-        if os.path.exists(filename):
-            image = pygame.image.load(filename)
-            return pygame.transform.scale(image, default_size)
-        else:
-            print(f"Файл {filename} не найден, создается заглушка")
-            image = pygame.Surface(default_size)
-            image.fill((100, 100, 100))  
-            return image
-    except pygame.error as e:
-        print(f"Ошибка загрузки {filename}: {e}")
-        image = pygame.Surface(default_size)
-        image.fill((100, 100, 100))
-        return image
+    image = pygame.image.load(filename)
+    return pygame.transform.scale(image, default_size)
 
 def load_sound_safe(filename):
-    try:
-        if os.path.exists(filename):
-            return pygame.mixer.Sound(filename)
-        else:
-            print(f"Звуковой файл {filename} не найден")
-            return pygame.mixer.Sound(buffer=b'\x00' * 1000)
-    except pygame.error as e:
-        print(f"Ошибка загрузки звука {filename}: {e}")
-        return pygame.mixer.Sound(buffer=b'\x00' * 1000)
+    return pygame.mixer.Sound(filename)
 
 class Tower:
     def __init__(self):
         self.tower_image = load_image_safe("tower.png", (275, 275))
         self.tower_x = 365
         self.tower_y = 225
-        self.tower_health = 50
+        self.tower_health = 25
         self.health_bar_length = 275
         self.health_bar_height = 10
         self.tower_max_health = self.tower_health
@@ -575,9 +558,9 @@ class Buff:
             player.player_attack = player.base_attack * player.damage_multiplier
             player.power_buff_active = True
         else:
-            if tower.tower_health <= 49:
+            if tower.tower_health == 24:
                 tower.tower_health += 1
-            elif tower.tower_health <= 48:
+            elif tower.tower_health <= 23:
                 tower.tower_health += 2
         
         self.collected = True
@@ -599,75 +582,53 @@ boss_punch_timer = 0
 steps_sound_timer = 300
 
 def load_game_resources():
-    global pause_back,settings_back,back_menu,background, boom, player, tower, enemies, bosses, buffs, steps_sound, enemy_die_sound, punch_sound, tower_hit, ult_sound, boss_punch_sound, player_animation_timer, animation_timer
-    global enemy_spawn_timer, enemy_buff_timer, animation_timer, buff_spawn_timer, boss_spaun_timer, boss_attack_cooldown, boom_timer, boss_boom_timer, enemy_lvl_timer, steps_sound_timer, boss_animation_timer, boss_punch_timer
-    
-    try:
-        enemy_die_sound = pygame.mixer.Sound("enemy_die.mp3")
-        tower_hit = pygame.mixer.Sound("hit_tower.mp3")
-        tower_hit.set_volume(0.5)
-        ult_sound = pygame.mixer.Sound("ultimate.mp3")
-        ult_sound.set_volume(0.3)
-        punch_sound = pygame.mixer.Sound("punch.mp3")
-        punch_sound.set_volume(0.3)
-        boss_punch_sound = pygame.mixer.Sound("boss_punch.mp3")
-        boss_punch_sound.set_volume(0.5)
-        boss_punch_timer = 0
-        steps_sound = pygame.mixer.Sound("steps.mp3")
-        steps_sound_timer = 300
-        background = pygame.image.load("background.jpeg")
-        background = pygame.transform.scale(background, (base_screen_x, base_screen_y))
-        back_menu = pygame.image.load("menu_back.png")
-        back_menu = pygame.transform.scale(back_menu, (base_screen_x, base_screen_y))
-        settings_back = pygame.image.load("settings_back.jpeg")
-        settings_back = pygame.transform.scale(settings_back, (base_screen_x, base_screen_y))
-        boom = pygame.image.load("boom.png")
-        boom = pygame.transform.scale(boom, (275, 275))
+    global pause_back, settings_back, back_menu, background, boom, player, tower, enemies, bosses, buffs, buttons
+    global steps_sound, enemy_die_sound, punch_sound, tower_hit, ult_sound, boss_punch_sound
+    global enemy_spawn_timer, enemy_buff_timer, animation_timer, buff_spawn_timer, boss_spawn_timer
+    global boss_attack_cooldown, boom_timer, boss_boom_timer, enemy_lvl_timer, steps_sound_timer
+    global boss_animation_timer, boss_punch_timer, player_animation_timer
 
-        player = Player()
-        tower = Tower()
-        enemies = []
-        bosses = []
-        buffs = []
-        
-        enemy_spawn_timer = 0
-        enemy_buff_timer = 0
-        animation_timer = 0
-        buff_spawn_timer = 0
-        boss_spaun_timer = 0
-        boss_attack_cooldown = 0
-        boom_timer = 0
-        boss_boom_timer = 0
-        enemy_lvl_timer = 0
-        boss_animation_timer = 0
-        steps_sound_timer = 0
-        player_animation_timer = 0
-        animation_timer = 0
-        
-    except pygame.error as e:
-        print(f"Ошибка загрузки ресурсов: {e}")
-        background = pygame.Surface((base_screen_x, base_screen_y))
-        background.fill((50, 50, 100))
-        boom = pygame.Surface((275, 275))
-        boom.fill((255, 0, 0))
-        
-        player = Player()
-        tower = Tower()
-        enemies = []
-        bosses = []
-        buffs = []
-        
-        enemy_spawn_timer = 0
-        enemy_buff_timer = 0
-        animation_timer = 0
-        buff_spawn_timer = 0
-        boss_spaun_timer = 0
-        boss_attack_cooldown = 0
-        boom_timer = 0
-        boss_boom_timer = 0
-        enemy_lvl_timer = 0
-        boss_animation_timer = 0
-        steps_sound_timer = 0
+    buttons = create_buttons()
+    
+    enemy_die_sound = pygame.mixer.Sound("enemy_die.mp3")
+    tower_hit = pygame.mixer.Sound("hit_tower.mp3")
+    tower_hit.set_volume(0.5)
+    ult_sound = pygame.mixer.Sound("ultimate.mp3")
+    ult_sound.set_volume(0.3)
+    punch_sound = pygame.mixer.Sound("punch.mp3")
+    punch_sound.set_volume(0.3)
+    boss_punch_sound = pygame.mixer.Sound("boss_punch.mp3")
+    boss_punch_sound.set_volume(0.5)
+    steps_sound = pygame.mixer.Sound("steps.mp3")
+    
+    background = pygame.image.load("background.jpeg")
+    background = pygame.transform.scale(background, (base_screen_x, base_screen_y))
+    back_menu = pygame.image.load("menu_back.png")
+    back_menu = pygame.transform.scale(back_menu, (base_screen_x, base_screen_y))
+    settings_back = pygame.image.load("settings_back.jpeg")
+    settings_back = pygame.transform.scale(settings_back, (base_screen_x, base_screen_y))
+    boom = pygame.image.load("boom.png")
+    boom = pygame.transform.scale(boom, (275, 275))
+
+    player = Player()
+    tower = Tower()
+    enemies = []
+    bosses = []
+    buffs = []
+    
+    enemy_spawn_timer = 0
+    enemy_buff_timer = 0
+    animation_timer = 0
+    buff_spawn_timer = 0
+    boss_spawn_timer = 0
+    boss_attack_cooldown = 0
+    boom_timer = 0
+    boss_boom_timer = 0
+    enemy_lvl_timer = 0
+    boss_animation_timer = 0
+    steps_sound_timer = 0
+    player_animation_timer = 0
+    boss_punch_timer = 0
 
 player = Player()
 tower = Tower()
@@ -779,7 +740,7 @@ while running:
                 screen.blit(pause_back, (0, 0))
         else:
             if tower.tower_health <= 0:
-                game_state = MENU
+                game_state = GAME_OVER
                 continue
                 
             scaled_screen.blit(background, (0, 0))
@@ -893,11 +854,11 @@ while running:
                 elif buff.should_disappear():
                     buffs.remove(buff)
 
-            boss_spaun_timer += 1
+            boss_spawn_timer += 1
             boss_attack_cooldown += 1
             boss_animation_timer += 1
-            if boss_spaun_timer == 1800:
-                boss_spaun_timer = 0
+            if boss_spawn_timer == 1800:
+                boss_spawn_timer = 0
                 bosses.append(Boss())
 
             boss_punch_timer += 1
@@ -973,7 +934,6 @@ while running:
                 scaled_screen.blit(ultimate_surface, (player.player_x - player.ultimate_radius + 50, 
                                         player.player_y - player.ultimate_radius + 50))
 
-            # HUD элементы
             health_text = font_small.render(f"Health: {tower.tower_health}", True, (255, 0, 0))
             scaled_screen.blit(health_text, (10, 10))
 
@@ -1011,12 +971,7 @@ while running:
                                 True, (255, 255, 0))  
                 scaled_screen.blit(power_text, (10, buff_y_pos))
                 buff_y_pos += 30
-
-            menu_button = Button(10, base_screen_y - 70, 120, 50, "Menu", (100, 100, 100), (150, 150, 150))
-            menu_button.check_hover(scaled_mouse_pos)
-            menu_button.draw(scaled_screen)
-            if menu_button.is_clicked(scaled_mouse_pos, mouse_clicked):
-                game_state = MENU
+            
 
             screen_width, screen_height = screen.get_size()
             scale_x = screen_width / base_screen_x
@@ -1031,6 +986,73 @@ while running:
         
             scaled_display = pygame.transform.scale(scaled_screen, (new_width, new_height))
             screen.blit(scaled_display, (pos_x, pos_y))
+
+    elif game_state == GAME_OVER:
+
+        scaled_screen.blit(background, (0, 0))
+        tower.draw(scaled_screen)
+        for enemy in enemies:
+            enemy.draw(scaled_screen)
+        for boss in bosses:
+            boss.boss_animation(scaled_screen)
+        for buff in buffs:
+            buff.draw(scaled_screen)
+        player.draw(scaled_screen)
+
+        overlay = pygame.Surface((base_screen_x, base_screen_y), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 150))
+        scaled_screen.blit(overlay, (0, 0))
+
+        game_over_text = font_large.render("GAME OVER", True, (255, 0, 0))
+        game_over_rect = game_over_text.get_rect(center=(base_screen_x//2, base_screen_y//4))
+        scaled_screen.blit(game_over_text, game_over_rect)
+
+        score_text = font_medium.render(f"Final Score: {player.player_score}", True, (255, 255, 255))
+        score_rect = score_text.get_rect(center=(base_screen_x//2, base_screen_y//4 + 100))
+        scaled_screen.blit(score_text, score_rect)
+
+        restart_button_rect = pygame.Rect(base_screen_x//2 - 160, base_screen_y//2 - 35, 320, 70)
+        main_menu_button_rect = pygame.Rect(base_screen_x//2 - 160, base_screen_y//2 + 55, 320, 70)
+
+        scaled_mouse_pos = get_scaled_mouse_pos()
+        restart_hovered = restart_button_rect.collidepoint(scaled_mouse_pos)
+        main_menu_hovered = main_menu_button_rect.collidepoint(scaled_mouse_pos)
+        
+        restart_color = (0, 150, 0) if restart_hovered else (0, 100, 0)
+        main_menu_color = (150, 0, 0) if main_menu_hovered else (100, 0, 0)
+        
+        pygame.draw.rect(scaled_screen, restart_color, restart_button_rect, border_radius=10)
+        pygame.draw.rect(scaled_screen, (255, 255, 255), restart_button_rect, 2, border_radius=10)
+        pygame.draw.rect(scaled_screen, main_menu_color, main_menu_button_rect, border_radius=10)
+        pygame.draw.rect(scaled_screen, (255, 255, 255), main_menu_button_rect, 2, border_radius=10)
+        
+        restart_text = font_medium.render("Restart", True, (255, 255, 255))
+        restart_text_rect = restart_text.get_rect(center=restart_button_rect.center)
+        scaled_screen.blit(restart_text, restart_text_rect)
+        
+        main_menu_text = font_medium.render("Main Menu", True, (255, 255, 255))
+        main_menu_text_rect = main_menu_text.get_rect(center=main_menu_button_rect.center)
+        scaled_screen.blit(main_menu_text, main_menu_text_rect)
+        
+        if restart_button_rect.collidepoint(scaled_mouse_pos) and mouse_clicked:
+            game_state = GAME
+            load_game_resources()
+        elif main_menu_button_rect.collidepoint(scaled_mouse_pos) and mouse_clicked:
+            game_state = MENU
+
+        screen_width, screen_height = screen.get_size()
+        scale_x = screen_width / base_screen_x
+        scale_y = screen_height / base_screen_y
+        scale = min(scale_x, scale_y)
+        
+        new_width = int(base_screen_x * scale)
+        new_height = int(base_screen_y * scale)
+        
+        pos_x = (screen_width - new_width) // 2
+        pos_y = (screen_height - new_height) // 2
+        
+        scaled_display = pygame.transform.scale(scaled_screen, (new_width, new_height))
+        screen.blit(scaled_display, (pos_x, pos_y))
     
     pygame.display.flip()
     clock.tick(60)
