@@ -411,10 +411,19 @@ class Player:
         self.speed_buff_active = False
         self.speed_buff_count = 0
         self.is_plaing = False
+        self.player_turn_r = True
+        self.is_still = True
 
     def is_moving(self):
         keys = pygame.key.get_pressed()
-        return keys[pygame.K_a] or keys[pygame.K_d] or keys[pygame.K_w] or keys[pygame.K_s]
+        if keys[pygame.K_a]:
+            return True
+        if keys[pygame.K_d]:
+            return True
+        if keys[pygame.K_w]:
+            return True
+        if keys[pygame.K_s]:
+            return True
 
     def move(self):
         keys = pygame.key.get_pressed()
@@ -449,19 +458,39 @@ class Player:
     def draw(self, surface):
         keys = pygame.key.get_pressed()
         if keys[pygame.K_d]:
+            self.player_turn_r = True
             surface.blit(self.player_image_r, (self.player_x, self.player_y))
         elif keys[pygame.K_a]:
+            self.player_turn_r = False
             surface.blit(self.player_image_l, (self.player_x, self.player_y))
         else:
-            surface.blit(self.player_image_l, (self.player_x, self.player_y))
+            if self.player_turn_r:
+                surface.blit(self.player_image_r, (self.player_x, self.player_y))
+            elif not self.player_turn_r:
+                surface.blit(self.player_image_l, (self.player_x, self.player_y))
             
         if self.ultimate_active:
             ultimate_surface = pygame.Surface((self.ultimate_radius*2, self.ultimate_radius*2), pygame.SRCALPHA)
-            pygame.draw.circle(ultimate_surface, (255, 255, 0, 100), 
+            pygame.draw.circle(ultimate_surface, (255, 255, 0, 50), 
                              (self.ultimate_radius, self.ultimate_radius), self.ultimate_radius)
             surface.blit(ultimate_surface, (self.player_x - self.ultimate_radius + 50, 
                                         self.player_y - self.ultimate_radius + 50))
-            
+    def animation(self, surface):
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_d]:
+           self.player_turn_r = True
+           animation = pygame.transform.scale(self.player_image_r, (110,90))
+           surface.blit(animation, (self.player_x, self.player_y))
+        elif keys[pygame.K_a]:
+           self.player_turn_r = False
+           animation = pygame.transform.scale(self.player_image_l, (110,90))
+           surface.blit(animation, (self.player_x, self.player_y))
+        else:
+            if self.player_turn_r:
+                surface.blit(self.player_image_r, (self.player_x, self.player_y))
+            elif not self.player_turn_r:
+                surface.blit(self.player_image_l, (self.player_x, self.player_y))
+
     def draw_stand(self, surface):
         keys = pygame.key.get_pressed()
         if keys[pygame.K_d]:
@@ -568,7 +597,7 @@ boss_punch_timer = 0
 steps_sound_timer = 300
 
 def load_game_resources():
-    global background, boom, player, tower, enemies, bosses, buffs, steps_sound, enemy_die_sound, punch_sound, tower_hit, ult_sound, boss_punch_sound
+    global background, boom, player, tower, enemies, bosses, buffs, steps_sound, enemy_die_sound, punch_sound, tower_hit, ult_sound, boss_punch_sound, player_animation_timer, animation_timer
     global enemy_spawn_timer, enemy_buff_timer, animation_timer, buff_spawn_timer, boss_spaun_timer, boss_attack_cooldown, boom_timer, boss_boom_timer, enemy_lvl_timer, steps_sound_timer, boss_animation_timer, boss_punch_timer
     
     try:
@@ -606,6 +635,8 @@ def load_game_resources():
         enemy_lvl_timer = 0
         boss_animation_timer = 0
         steps_sound_timer = 0
+        player_animation_timer = 0
+        animation_timer = 0
         
     except pygame.error as e:
         print(f"Ошибка загрузки ресурсов: {e}")
@@ -712,9 +743,17 @@ while running:
         if tower.tower_health <= 0:
             game_state = MENU
             continue
-
+            
+        # Очищаем экран и рисуем фон
         scaled_screen.blit(background, (0, 0))
-
+        
+        # Рисуем башню
+        tower.draw(scaled_screen)
+        
+        # Обновляем и рисуем игрока
+        player.move()
+        
+        # Звук шагов
         steps_sound_timer += 1
         if player.is_moving() and steps_sound_timer >= 300:
             steps_sound.play()  
@@ -722,9 +761,15 @@ while running:
         if not player.is_moving():
             steps_sound.stop()
 
-        tower.draw(scaled_screen)
-        player.move()
-        player.draw(scaled_screen)
+        # Анимация игрока
+        player_animation_timer += 1
+        if player_animation_timer <= 8:
+            player.draw(scaled_screen)
+        else:
+            player.animation(scaled_screen)
+        if player_animation_timer >= 16:
+            player_animation_timer = 0
+
         player.update_buffs() 
 
         enemy_spawn_timer += 1
@@ -821,7 +866,7 @@ while running:
         if boss_spaun_timer == 1800:
             boss_spaun_timer = 0
             bosses.append(Boss())
-        
+
         boss_punch_timer += 1
         for boss in bosses[:]:
             boss.move()
@@ -879,6 +924,14 @@ while running:
 
         player.update_ultimate()
 
+        if player.ultimate_active:
+            ultimate_surface = pygame.Surface((player.ultimate_radius*2, player.ultimate_radius*2), pygame.SRCALPHA)
+            pygame.draw.circle(ultimate_surface, (255, 255, 0, 100), 
+                        (player.ultimate_radius, player.ultimate_radius), player.ultimate_radius)
+            scaled_screen.blit(ultimate_surface, (player.player_x - player.ultimate_radius + 50, 
+                                    player.player_y - player.ultimate_radius + 50))
+
+        # HUD элементы
         health_text = font_small.render(f"Health: {tower.tower_health}", True, (255, 0, 0))
         scaled_screen.blit(health_text, (10, 10))
 
@@ -898,7 +951,7 @@ while running:
             cooldown = player.ultimate_cooldown - (current_time - player.last_ultimate_time)
             ultimate_status = f"Ultimate: {cooldown:.1f}s"
             color = (255, 0, 0)
-        
+
         ultimate_text = font_small.render(ultimate_status, True, color)
         scaled_screen.blit(ultimate_text, (base_screen_x // 2 - ultimate_text.get_width() // 2, 10))
 
@@ -913,7 +966,7 @@ while running:
 
         if player.damage_multiplier > 1:
             power_text = font_small.render(f"Power x{player.damage_multiplier:.1f}", 
-                               True, (255, 255, 0))  
+                            True, (255, 255, 0))  
             scaled_screen.blit(power_text, (10, buff_y_pos))
             buff_y_pos += 30
 
@@ -923,7 +976,6 @@ while running:
         if menu_button.is_clicked(scaled_mouse_pos, mouse_clicked):
             game_state = MENU
 
-    if game_state == GAME:
         screen_width, screen_height = screen.get_size()
         scale_x = screen_width / base_screen_x
         scale_y = screen_height / base_screen_y
