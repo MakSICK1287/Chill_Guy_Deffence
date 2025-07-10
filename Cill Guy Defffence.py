@@ -7,7 +7,7 @@ import os
 pygame.init()
 
 pygame.mixer.init()
-
+is_paused = False
 screen_info = pygame.display.Info()
 screen_x = 1000
 screen_y = 800
@@ -178,7 +178,7 @@ class Boss:
         self.side = random.randint(0, 3)
         self.boss_x = 0
         self.boss_y = 0
-        
+        self.is_buffed = False
         if self.side == 0: 
             self.boss_y = random.randint(0, screen_y - 225)
             self.boss_x = -225
@@ -544,20 +544,19 @@ class Buff:
         self.collected = False
         self.spawn_time = time.time()
 
-        self.image = pygame.Surface((40, 40), pygame.SRCALPHA)
         if self.type == "speed":
-            self.color = (255, 165, 0)
-            pygame.draw.rect(self.image, self.color, (5, 5, 30, 30))
+            self.buff_image = pygame.image.load("speed_buff.png")
+            self.buff_image = pygame.transform.scale(self.buff_image , (50,50))
         elif self.type == "power":
-            self.color = (255, 255, 0)
-            pygame.draw.rect(self.image, self.color, (5, 5, 30, 30))
+            self.buff_image = pygame.image.load("strength_buff.png")
+            self.buff_image = pygame.transform.scale(self.buff_image , (60,60))
         else:
-            self.color = (0, 255, 0)
-            pygame.draw.rect(self.image, self.color, (5, 5, 30, 30))
+            self.buff_image = pygame.image.load("heal_buff.png")
+            self.buff_image = pygame.transform.scale(self.buff_image , (50,50))
     
     def draw(self, surface):
         if not self.collected:
-            surface.blit(self.image, (self.x - 20, self.y - 20))
+            surface.blit(self.buff_image, (self.x - 20, self.y - 20))
     
     def check_collision(self, player):
         if self.collected:
@@ -576,7 +575,10 @@ class Buff:
             player.player_attack = player.base_attack * player.damage_multiplier
             player.power_buff_active = True
         else:
-            tower.tower_health = min(tower.tower_health + 10, 50)
+            if tower.tower_health <= 49:
+                tower.tower_health += 1
+            elif tower.tower_health <= 48:
+                tower.tower_health += 2
         
         self.collected = True
         
@@ -597,7 +599,7 @@ boss_punch_timer = 0
 steps_sound_timer = 300
 
 def load_game_resources():
-    global background, boom, player, tower, enemies, bosses, buffs, steps_sound, enemy_die_sound, punch_sound, tower_hit, ult_sound, boss_punch_sound, player_animation_timer, animation_timer
+    global pause_back,settings_back,back_menu,background, boom, player, tower, enemies, bosses, buffs, steps_sound, enemy_die_sound, punch_sound, tower_hit, ult_sound, boss_punch_sound, player_animation_timer, animation_timer
     global enemy_spawn_timer, enemy_buff_timer, animation_timer, buff_spawn_timer, boss_spaun_timer, boss_attack_cooldown, boom_timer, boss_boom_timer, enemy_lvl_timer, steps_sound_timer, boss_animation_timer, boss_punch_timer
     
     try:
@@ -613,8 +615,12 @@ def load_game_resources():
         boss_punch_timer = 0
         steps_sound = pygame.mixer.Sound("steps.mp3")
         steps_sound_timer = 300
-        background = pygame.image.load("background.png")
+        background = pygame.image.load("background.jpeg")
         background = pygame.transform.scale(background, (base_screen_x, base_screen_y))
+        back_menu = pygame.image.load("menu_back.png")
+        back_menu = pygame.transform.scale(back_menu, (base_screen_x, base_screen_y))
+        settings_back = pygame.image.load("settings_back.jpeg")
+        settings_back = pygame.transform.scale(settings_back, (base_screen_x, base_screen_y))
         boom = pygame.image.load("boom.png")
         boom = pygame.transform.scale(boom, (275, 275))
 
@@ -681,9 +687,9 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 mouse_clicked = True
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE and fullscreen:
-                toggle_fullscreen()
+        #if event.type == pygame.KEYDOWN:
+            #if event.key == pygame.K_ESCAPE and fullscreen:
+               # toggle_fullscreen()
         if event.type == pygame.VIDEORESIZE and not fullscreen:
             screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
             for button in buttons.values():
@@ -691,8 +697,15 @@ while running:
 
     screen.fill((0, 0, 0))
     scaled_screen.fill((0, 0, 0))
-    
+    keys = pygame.key.get_pressed()
     if game_state == MENU:
+        if fullscreen:
+            screen_width, screen_height = screen.get_size()
+            back_menu = pygame.transform.scale(back_menu, (screen_width, screen_height))
+            screen.blit(back_menu, (0, 0))
+        else:
+            back_menu = pygame.transform.scale(back_menu, (base_screen_x, base_screen_y))
+            screen.blit(back_menu, (0, 0))
         title = font_large.render("Chill Guy Defence", True, (255, 255, 255))
         screen.blit(title, (screen.get_width()//2 - title.get_width()//2, 
                           int(screen.get_height() * 0.15)))
@@ -714,6 +727,13 @@ while running:
             running = False
     
     elif game_state == SETTINGS:
+        if fullscreen:
+            screen_width, screen_height = screen.get_size()
+            settings_back = pygame.transform.scale(settings_back, (screen_width, screen_height))
+            screen.blit(settings_back, (0, 0))
+        else:
+            settings_back = pygame.transform.scale(settings_back, (base_screen_x, base_screen_y))
+            screen.blit(settings_back, (0, 0))
         title = font_large.render("Settings", True, (255, 255, 255))
         screen.blit(title, (screen.get_width()//2 - title.get_width()//2, 
                            int(screen.get_height() * 0.15)))
@@ -739,256 +759,278 @@ while running:
     
     elif game_state == GAME:
         current_time = time.time()
-
-        if tower.tower_health <= 0:
-            game_state = MENU
-            continue
-            
-        # Очищаем экран и рисуем фон
-        scaled_screen.blit(background, (0, 0))
-        
-        # Рисуем башню
-        tower.draw(scaled_screen)
-        
-        # Обновляем и рисуем игрока
-        player.move()
-        
-        # Звук шагов
-        steps_sound_timer += 1
-        if player.is_moving() and steps_sound_timer >= 300:
-            steps_sound.play()  
-            steps_sound_timer = 0 
-        if not player.is_moving():
-            steps_sound.stop()
-
-        # Анимация игрока
-        player_animation_timer += 1
-        if player_animation_timer <= 8:
-            player.draw(scaled_screen)
-        else:
-            player.animation(scaled_screen)
-        if player_animation_timer >= 16:
-            player_animation_timer = 0
-
-        player.update_buffs() 
-
-        enemy_spawn_timer += 1
-        if enemy_spawn_timer >= 90:
-            enemies.append(Enemies())
-            enemy_spawn_timer = 0 
-
-        enemy_buff_timer += 1  
-        animation_timer += 1 
-
-        for enemy in enemies[:]:
-            enemy.move()
-            
-            if animation_timer <= 10:
-                enemy.draw(scaled_screen)
-            else:
-                enemy.animation(scaled_screen)
-
-            if enemy.health <= 0:
-                enemy_die_sound.play()
-                player.player_score += 1
-                enemies.remove(enemy)
+        if keys[pygame.K_ESCAPE]:
+            is_paused = True
+        if keys[pygame.K_p]:
+            is_paused = False
+        if is_paused:
+            if keys[pygame.K_o]:
+                is_paused = False
+                game_state = MENU
                 continue
-
-            if enemy_buff_timer >= 1800 and enemy_lvl_timer == 1 and (not enemy.is_buffed):
-                enemy.health += enemy.health
-                enemy.is_buffed = True
-                enemy.max_health = enemy.health
-                enemy.speed += 1
-            if enemy_buff_timer >= 3600 and enemy_lvl_timer == 2 and (not enemy.is_buffed):
-                enemy.health += enemy.health * 2
-                enemy.is_buffed = True
-                enemy.max_health = enemy.health
-                enemy.speed += 1
-            if enemy_buff_timer >= 5400 and enemy_lvl_timer == 3 and (not enemy.is_buffed):
-                enemy.health += enemy.health * 3
-                enemy.is_buffed = True
-                enemy.max_health = enemy.health
-                enemy.speed += 1
-
-            if player.ultimate_active and player.ultimate_kill(enemy):
-                enemy_die_sound.play()
-                player.player_score += 1
-                enemies.remove(enemy)
-                continue
-
-            if player.punch(enemy):
-                enemy.take_damage(player)
-                punch_sound.play()
-            elif player.kill(enemy) and enemy.check_hit():
-                tower.tower_health -= 1
-                tower_hit.play()
-                enemies.remove(enemy)
-            elif player.kill(enemy):
-                enemy_die_sound.play()
-                player.player_score += 1
-                enemies.remove(enemy)
-            elif enemy.check_hit():
-                tower.tower_health -= 1
-                tower_hit.play()
-                boom_timer = 180
-                enemies.remove(enemy)
-
-        if animation_timer >= 20:
-            animation_timer = 0
-
-        if enemy_buff_timer == 1800 and enemy_lvl_timer == 0:
-            enemy_lvl_timer += 1
-        if enemy_buff_timer == 3600 and enemy_lvl_timer == 1:
-            enemy_lvl_timer += 1
-        if enemy_buff_timer == 5400 and enemy_lvl_timer == 2:
-            enemy_lvl_timer += 1    
-
-        if boom_timer >= 60:
-            scaled_screen.blit(boom, (365, 225))
-            boom_timer -= 4
-
-        buff_spawn_timer += 1
-        if buff_spawn_timer >= 100:
-            buffs.append(Buff())
-            buff_spawn_timer = 0
-
-        for buff in buffs[:]:
-            buff.draw(scaled_screen)
-            if buff.check_collision(player):
-                buff.apply(player, tower)
-                buffs.remove(buff)
-            elif buff.should_disappear():
-                buffs.remove(buff)
-
-        boss_spaun_timer += 1
-        boss_attack_cooldown += 1
-        boss_animation_timer += 1
-        if boss_spaun_timer == 1800:
-            boss_spaun_timer = 0
-            bosses.append(Boss())
-
-        boss_punch_timer += 1
-        for boss in bosses[:]:
-            boss.move()
-            if boss_animation_timer <= 10:
-                boss.length = 225
-                boss.height = 200
-                boss.boss_animation(scaled_screen)
-            elif boss_animation_timer <= 20:
-                boss.length = 250
-                boss.height = 180
-                boss.boss_animation(scaled_screen)
-            elif boss_animation_timer <= 30:
-                boss.length = 275
-                boss.height = 160
-                boss.boss_animation(scaled_screen)
-            elif boss_animation_timer <= 40:
-                boss.length = 275
-                boss.height = 160
-                boss.boss_animation(scaled_screen)
-            elif boss_animation_timer <= 50:
-                boss.length = 250
-                boss.height = 180
-                boss.boss_animation(scaled_screen)
+            if fullscreen:
+                screen_width, screen_height = screen.get_size()
+                pause_back = pygame.image.load("pause_back.png")
+                pause_back = pygame.transform.scale(pause_back, (screen_width, screen_height))
+                screen.blit(pause_back, (0, 0))
             else:
-                boss.length = 225
-                boss.height = 200
-                boss.boss_animation(scaled_screen)
-
-            if boss_animation_timer >= 60:
-                boss_animation_timer = 0
-            
-            if boss.check_hit():
-                boss.boss_speed = 0
-                if boss_boom_timer > 0:
-                    scaled_screen.blit(boom, (365, 225))
-                    boss_boom_timer -= 1
-
-            if boss_attack_cooldown >= 180 and boss.check_hit():
-                boss_attack_cooldown = 0
-                boss_boom_timer = 60
-                tower_hit.play()
-                tower.tower_health -= 2
-
-            if player.punch_boss(boss):
-                player.draw_stand(scaled_screen)
-                if boss_punch_timer >= 180:
-                    boss_punch_sound.play()
-                    boss_punch_timer = 0
-                boss.take_damage(player)
-                boss.boss_speed = 1
-            elif player.kill_boss(boss):
-                player.player_score += 10
-                boss_punch_sound.stop()
-                bosses.remove(boss)
-
-        player.update_ultimate()
-
-        if player.ultimate_active:
-            ultimate_surface = pygame.Surface((player.ultimate_radius*2, player.ultimate_radius*2), pygame.SRCALPHA)
-            pygame.draw.circle(ultimate_surface, (255, 255, 0, 100), 
-                        (player.ultimate_radius, player.ultimate_radius), player.ultimate_radius)
-            scaled_screen.blit(ultimate_surface, (player.player_x - player.ultimate_radius + 50, 
-                                    player.player_y - player.ultimate_radius + 50))
-
-        # HUD элементы
-        health_text = font_small.render(f"Health: {tower.tower_health}", True, (255, 0, 0))
-        scaled_screen.blit(health_text, (10, 10))
-
-        score_text = font_small.render(f"Score: {player.player_score}", True, (0, 0, 255))
-        scaled_screen.blit(score_text, (base_screen_x - score_text.get_width() - 10, 10))
-
-        Lvl_text = font_small.render(f"Level: {enemy_lvl_timer}", True, (219, 172, 52))
-        scaled_screen.blit(Lvl_text, (base_screen_x // 2 - Lvl_text.get_width() // 2, base_screen_y - Lvl_text.get_height()*1.5))
-
-        if player.ultimate_active:
-            ultimate_status = f"Ultimate: {player.ultimate_duration - (current_time - player.ultimate_start_time):.1f}s"
-            color = (0, 255, 0)
-        elif player.ultimate_ready:
-            ultimate_status = "Ultimate: READY"
-            color = (0, 255, 0)
+                pause_back = pygame.image.load("pause_back.png")
+                pause_back = pygame.transform.scale(pause_back, (base_screen_x, base_screen_y))
+                screen.blit(pause_back, (0, 0))
         else:
-            cooldown = player.ultimate_cooldown - (current_time - player.last_ultimate_time)
-            ultimate_status = f"Ultimate: {cooldown:.1f}s"
-            color = (255, 0, 0)
+            if tower.tower_health <= 0:
+                game_state = MENU
+                continue
+                
+            scaled_screen.blit(background, (0, 0))
+            
+            tower.draw(scaled_screen)
+            
+            player.move()
+            
+            steps_sound_timer += 1
+            if player.is_moving() and steps_sound_timer >= 300:
+                steps_sound.play()  
+                steps_sound_timer = 0 
+            if not player.is_moving():
+                steps_sound.stop()
 
-        ultimate_text = font_small.render(ultimate_status, True, color)
-        scaled_screen.blit(ultimate_text, (base_screen_x // 2 - ultimate_text.get_width() // 2, 10))
+            player_animation_timer += 1
+            if player_animation_timer <= 8:
+                player.draw(scaled_screen)
+            else:
+                player.animation(scaled_screen)
+            if player_animation_timer >= 16:
+                player_animation_timer = 0
 
-        buff_y_pos = 50
+            player.update_buffs() 
 
-        if player.speed_buff_active:
-            remaining_time = max(0, 10 - (current_time - player.speed_buff_timer))
-            speed_text = font_small.render(f"Speed x1.5 ({remaining_time:.1f}s)", 
-                                True, (255, 165, 0))
-            scaled_screen.blit(speed_text, (10, buff_y_pos))
-            buff_y_pos += 30
+            enemy_spawn_timer += 1
+            if enemy_spawn_timer >= 90:
+                enemies.append(Enemies())
+                enemy_spawn_timer = 0 
 
-        if player.damage_multiplier > 1:
-            power_text = font_small.render(f"Power x{player.damage_multiplier:.1f}", 
-                            True, (255, 255, 0))  
-            scaled_screen.blit(power_text, (10, buff_y_pos))
-            buff_y_pos += 30
+            enemy_buff_timer += 1  
+            animation_timer += 1 
 
-        menu_button = Button(10, base_screen_y - 70, 120, 50, "Menu", (100, 100, 100), (150, 150, 150))
-        menu_button.check_hover(scaled_mouse_pos)
-        menu_button.draw(scaled_screen)
-        if menu_button.is_clicked(scaled_mouse_pos, mouse_clicked):
-            game_state = MENU
+            for enemy in enemies[:]:
+                enemy.move()
+                
+                if animation_timer <= 10:
+                    enemy.draw(scaled_screen)
+                else:
+                    enemy.animation(scaled_screen)
 
-        screen_width, screen_height = screen.get_size()
-        scale_x = screen_width / base_screen_x
-        scale_y = screen_height / base_screen_y
-        scale = min(scale_x, scale_y)
-    
-        new_width = int(base_screen_x * scale)
-        new_height = int(base_screen_y * scale)
-    
-        pos_x = (screen_width - new_width) // 2
-        pos_y = (screen_height - new_height) // 2
-    
-        scaled_display = pygame.transform.scale(scaled_screen, (new_width, new_height))
-        screen.blit(scaled_display, (pos_x, pos_y))
+                if enemy.health <= 0:
+                    enemy_die_sound.play()
+                    player.player_score += 1
+                    enemies.remove(enemy)
+                    continue
+
+                if enemy_buff_timer >= 1800 and enemy_lvl_timer == 1 and (not enemy.is_buffed):
+                    enemy.health += enemy.health
+                    enemy.is_buffed = True
+                    enemy.max_health = enemy.health
+                    enemy.speed += 1
+                if enemy_buff_timer >= 3600 and enemy_lvl_timer == 2 and (not enemy.is_buffed):
+                    enemy.health += enemy.health * 2
+                    enemy.is_buffed = True
+                    enemy.max_health = enemy.health
+                    enemy.speed += 1
+                if enemy_buff_timer >= 5400 and enemy_lvl_timer == 3 and (not enemy.is_buffed):
+                    enemy.health += enemy.health * 3
+                    enemy.is_buffed = True
+                    enemy.max_health = enemy.health
+                    enemy.speed += 1
+
+                if player.ultimate_active and player.ultimate_kill(enemy):
+                    enemy_die_sound.play()
+                    player.player_score += 1
+                    enemies.remove(enemy)
+                    continue
+
+                if player.punch(enemy):
+                    enemy.take_damage(player)
+                    punch_sound.play()
+                elif player.kill(enemy) and enemy.check_hit():
+                    tower.tower_health -= 1
+                    tower_hit.play()
+                    enemies.remove(enemy)
+                elif player.kill(enemy):
+                    enemy_die_sound.play()
+                    player.player_score += 1
+                    enemies.remove(enemy)
+                elif enemy.check_hit():
+                    tower.tower_health -= 1
+                    tower_hit.play()
+                    boom_timer = 180
+                    enemies.remove(enemy)
+
+            if animation_timer >= 20:
+                animation_timer = 0
+
+            if enemy_buff_timer == 1800 and enemy_lvl_timer == 0:
+                enemy_lvl_timer += 1
+            if enemy_buff_timer == 3600 and enemy_lvl_timer == 1:
+                enemy_lvl_timer += 1
+            if enemy_buff_timer == 5400 and enemy_lvl_timer == 2:
+                enemy_lvl_timer += 1    
+
+            if boom_timer >= 60:
+                scaled_screen.blit(boom, (365, 225))
+                boom_timer -= 4
+
+            buff_spawn_timer += 1
+            if buff_spawn_timer >= 100:
+                buffs.append(Buff())
+                buff_spawn_timer = 0
+
+            for buff in buffs[:]:
+                buff.draw(scaled_screen)
+                if buff.check_collision(player):
+                    buff.apply(player, tower)
+                    buffs.remove(buff)
+                elif buff.should_disappear():
+                    buffs.remove(buff)
+
+            boss_spaun_timer += 1
+            boss_attack_cooldown += 1
+            boss_animation_timer += 1
+            if boss_spaun_timer == 1800:
+                boss_spaun_timer = 0
+                bosses.append(Boss())
+
+            boss_punch_timer += 1
+            for boss in bosses[:]:
+                boss.move()
+                if boss_animation_timer <= 10:
+                    boss.length = 225
+                    boss.height = 200
+                    boss.boss_animation(scaled_screen)
+                elif boss_animation_timer <= 20:
+                    boss.length = 250
+                    boss.height = 180
+                    boss.boss_animation(scaled_screen)
+                elif boss_animation_timer <= 30:
+                    boss.length = 275
+                    boss.height = 160
+                    boss.boss_animation(scaled_screen)
+                elif boss_animation_timer <= 40:
+                    boss.length = 275
+                    boss.height = 160
+                    boss.boss_animation(scaled_screen)
+                elif boss_animation_timer <= 50:
+                    boss.length = 250
+                    boss.height = 180
+                    boss.boss_animation(scaled_screen)
+                else:
+                    boss.length = 225
+                    boss.height = 200
+                    boss.boss_animation(scaled_screen)
+
+                if enemy_lvl_timer == 2 and not(boss.is_buffed):
+                    boss.boss_health *= 2
+                    boss.boss_max_health = boss.boss_health
+                    boss.is_buffed = True
+                if enemy_lvl_timer == 3 and not(boss.is_buffed):
+                    boss.boss_health *= 3
+                    boss.boss_max_health = boss.boss_health
+                    boss.is_buffed = True
+
+                if boss_animation_timer >= 60:
+                    boss_animation_timer = 0
+                
+                if boss.check_hit():
+                    boss.boss_speed = 0
+                    if boss_boom_timer > 0:
+                        scaled_screen.blit(boom, (365, 225))
+                        boss_boom_timer -= 1
+
+                if boss_attack_cooldown >= 180 and boss.check_hit():
+                    boss_attack_cooldown = 0
+                    boss_boom_timer = 60
+                    tower_hit.play()
+                    tower.tower_health -= 15
+
+                if player.punch_boss(boss):
+                    player.draw_stand(scaled_screen)
+                    if boss_punch_timer >= 180:
+                        boss_punch_sound.play()
+                        boss_punch_timer = 0
+                    boss.take_damage(player)
+                    boss.boss_speed = 1
+                elif player.kill_boss(boss):
+                    player.player_score += 10
+                    boss_punch_sound.stop()
+                    bosses.remove(boss)
+
+            player.update_ultimate()
+
+            if player.ultimate_active:
+                ultimate_surface = pygame.Surface((player.ultimate_radius*2, player.ultimate_radius*2), pygame.SRCALPHA)
+                pygame.draw.circle(ultimate_surface, (255, 255, 0, 100), 
+                            (player.ultimate_radius, player.ultimate_radius), player.ultimate_radius)
+                scaled_screen.blit(ultimate_surface, (player.player_x - player.ultimate_radius + 50, 
+                                        player.player_y - player.ultimate_radius + 50))
+
+            # HUD элементы
+            health_text = font_small.render(f"Health: {tower.tower_health}", True, (255, 0, 0))
+            scaled_screen.blit(health_text, (10, 10))
+
+            score_text = font_small.render(f"Score: {player.player_score}", True, (0, 0, 255))
+            scaled_screen.blit(score_text, (base_screen_x - score_text.get_width() - 10, 10))
+
+            Lvl_text = font_small.render(f"Level: {enemy_lvl_timer}", True, (219, 172, 52))
+            scaled_screen.blit(Lvl_text, (base_screen_x // 2 - Lvl_text.get_width() // 2, base_screen_y - Lvl_text.get_height()*1.5))
+
+            if player.ultimate_active:
+                ultimate_status = f"Ultimate: {player.ultimate_duration - (current_time - player.ultimate_start_time):.1f}s"
+                color = (0, 255, 0)
+            elif player.ultimate_ready:
+                ultimate_status = "Ultimate: READY"
+                color = (0, 255, 0)
+            else:
+                cooldown = player.ultimate_cooldown - (current_time - player.last_ultimate_time)
+                ultimate_status = f"Ultimate: {cooldown:.1f}s"
+                color = (255, 0, 0)
+
+            ultimate_text = font_small.render(ultimate_status, True, color)
+            scaled_screen.blit(ultimate_text, (base_screen_x // 2 - ultimate_text.get_width() // 2, 10))
+
+            buff_y_pos = 50
+
+            if player.speed_buff_active:
+                remaining_time = max(0, 10 - (current_time - player.speed_buff_timer))
+                speed_text = font_small.render(f"Speed x1.5 ({remaining_time:.1f}s)", 
+                                    True, (255, 165, 0))
+                scaled_screen.blit(speed_text, (10, buff_y_pos))
+                buff_y_pos += 30
+
+            if player.damage_multiplier > 1:
+                power_text = font_small.render(f"Power x{player.damage_multiplier:.1f}", 
+                                True, (255, 255, 0))  
+                scaled_screen.blit(power_text, (10, buff_y_pos))
+                buff_y_pos += 30
+
+            menu_button = Button(10, base_screen_y - 70, 120, 50, "Menu", (100, 100, 100), (150, 150, 150))
+            menu_button.check_hover(scaled_mouse_pos)
+            menu_button.draw(scaled_screen)
+            if menu_button.is_clicked(scaled_mouse_pos, mouse_clicked):
+                game_state = MENU
+
+            screen_width, screen_height = screen.get_size()
+            scale_x = screen_width / base_screen_x
+            scale_y = screen_height / base_screen_y
+            scale = min(scale_x, scale_y)
+        
+            new_width = int(base_screen_x * scale)
+            new_height = int(base_screen_y * scale)
+        
+            pos_x = (screen_width - new_width) // 2
+            pos_y = (screen_height - new_height) // 2
+        
+            scaled_display = pygame.transform.scale(scaled_screen, (new_width, new_height))
+            screen.blit(scaled_display, (pos_x, pos_y))
     
     pygame.display.flip()
     clock.tick(60)
