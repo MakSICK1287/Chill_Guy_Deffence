@@ -481,7 +481,11 @@ class Player:
         elif keys[pygame.K_a]:
             surface.blit(self.player_stand_l, (self.player_x, self.player_y - 90))
         else:
-            surface.blit(self.player_stand_l, (self.player_x, self.player_y - 90))
+            if self.player_turn_r:
+                surface.blit(self.player_stand_r, (self.player_x, self.player_y - 90))
+            elif not self.player_turn_r:
+                surface.blit(self.player_stand_l, (self.player_x, self.player_y - 90))
+
 
     def punch(self, enemy):
         enemy_rect = pygame.Rect(enemy.enemy1_x, enemy.enemy1_y, 50, 50)
@@ -583,10 +587,10 @@ steps_sound_timer = 300
 
 def load_game_resources():
     global pause_back, settings_back, back_menu, background, boom, player, tower, enemies, bosses, buffs, buttons
-    global steps_sound, enemy_die_sound, punch_sound, tower_hit, ult_sound, boss_punch_sound
+    global menu_music,back_music3,back_music2,back_music1,steps_sound, enemy_die_sound, punch_sound, tower_hit, ult_sound, boss_punch_sound
     global enemy_spawn_timer, enemy_buff_timer, animation_timer, buff_spawn_timer, boss_spawn_timer
     global boss_attack_cooldown, boom_timer, boss_boom_timer, enemy_lvl_timer, steps_sound_timer
-    global boss_animation_timer, boss_punch_timer, player_animation_timer
+    global menu_music_timer,back_music1_timer,boss_animation_timer, boss_punch_timer, player_animation_timer
 
     buttons = create_buttons()
     
@@ -600,6 +604,16 @@ def load_game_resources():
     boss_punch_sound = pygame.mixer.Sound("boss_punch.mp3")
     boss_punch_sound.set_volume(0.5)
     steps_sound = pygame.mixer.Sound("steps.mp3")
+    back_music1 = pygame.mixer.Sound("back_music1.mp3")
+    back_music1.set_volume(0.09)
+    back_music1_timer = 0
+    back_music2 = pygame.mixer.Sound("back_music2.mp3")
+    back_music2.set_volume(0.09)
+    back_music3 = pygame.mixer.Sound("back_music3.mp3")
+    back_music3.set_volume(0.09)
+    menu_music = pygame.mixer.Sound("menu_sound.mp3")
+    menu_music.set_volume(0.4)
+    menu_music_timer = 0
     
     background = pygame.image.load("background.jpeg")
     background = pygame.transform.scale(background, (base_screen_x, base_screen_y))
@@ -648,9 +662,6 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 mouse_clicked = True
-        #if event.type == pygame.KEYDOWN:
-            #if event.key == pygame.K_ESCAPE and fullscreen:
-               # toggle_fullscreen()
         if event.type == pygame.VIDEORESIZE and not fullscreen:
             screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
             for button in buttons.values():
@@ -659,7 +670,16 @@ while running:
     screen.fill((0, 0, 0))
     scaled_screen.fill((0, 0, 0))
     keys = pygame.key.get_pressed()
-    if game_state == MENU:
+    if not (game_state == GAME):
+        back_music1.stop()
+        back_music2.stop()
+        back_music3.stop()
+        if menu_music_timer == 0:
+            menu_music.play() 
+        menu_music_timer += 1
+        if menu_music_timer == 450:
+            menu_music_timer = 0         
+    if game_state == MENU:   
         if fullscreen:
             screen_width, screen_height = screen.get_size()
             back_menu = pygame.transform.scale(back_menu, (screen_width, screen_height))
@@ -681,13 +701,14 @@ while running:
         
         if buttons['play'].is_clicked(mouse_pos, mouse_clicked):
             game_state = GAME
+            menu_music.stop()
             load_game_resources()
         elif buttons['settings'].is_clicked(mouse_pos, mouse_clicked):
             game_state = SETTINGS
         elif buttons['exit'].is_clicked(mouse_pos, mouse_clicked):
             running = False
     
-    elif game_state == SETTINGS:
+    elif game_state == SETTINGS: 
         if fullscreen:
             screen_width, screen_height = screen.get_size()
             settings_back = pygame.transform.scale(settings_back, (screen_width, screen_height))
@@ -719,7 +740,16 @@ while running:
             game_state = MENU
     
     elif game_state == GAME:
-        current_time = time.time()
+        current_time = time.time() 
+        if back_music1_timer == 0:
+            back_music1.play()
+        if back_music1_timer == 13140:
+            back_music2.play()
+        if back_music1_timer == 22500:
+            back_music3.play()
+        back_music1_timer += 1
+        if back_music1_timer == 35520:
+            back_music1_timer = 0
         if keys[pygame.K_ESCAPE]:
             is_paused = True
         if keys[pygame.K_p]:
@@ -788,21 +818,26 @@ while running:
                     enemies.remove(enemy)
                     continue
 
-                if enemy_buff_timer >= 1800 and enemy_lvl_timer == 1 and (not enemy.is_buffed):
+                if enemy_buff_timer >= 1800 and enemy_buff_timer < 3600 and enemy_lvl_timer == 1 and (not enemy.is_buffed):
                     enemy.health += enemy.health
                     enemy.is_buffed = True
                     enemy.max_health = enemy.health
                     enemy.speed += 1
-                if enemy_buff_timer >= 3600 and enemy_lvl_timer == 2 and (not enemy.is_buffed):
+                if enemy_buff_timer >= 3600 and enemy_buff_timer < 5400 and enemy_lvl_timer == 2 and (not enemy.is_buffed):
                     enemy.health += enemy.health * 2
                     enemy.is_buffed = True
                     enemy.max_health = enemy.health
                     enemy.speed += 1
-                if enemy_buff_timer >= 5400 and enemy_lvl_timer == 3 and (not enemy.is_buffed):
+                if enemy_buff_timer >= 5400 and enemy_buff_timer < 10800 and enemy_lvl_timer == 3 and (not enemy.is_buffed):
                     enemy.health += enemy.health * 3
                     enemy.is_buffed = True
                     enemy.max_health = enemy.health
                     enemy.speed += 1
+                if enemy_buff_timer >= 10800 and enemy_lvl_timer == 4 and (not enemy.is_buffed):
+                    enemy.health += enemy.health * 20
+                    enemy.is_buffed = True
+                    enemy.max_health = enemy.health
+                    enemy.speed += 5
 
                 if player.ultimate_active and player.ultimate_kill(enemy):
                     enemy_die_sound.play()
@@ -835,6 +870,8 @@ while running:
             if enemy_buff_timer == 3600 and enemy_lvl_timer == 1:
                 enemy_lvl_timer += 1
             if enemy_buff_timer == 5400 and enemy_lvl_timer == 2:
+                enemy_lvl_timer += 1 
+            if enemy_buff_timer == 10800 and enemy_lvl_timer == 3:
                 enemy_lvl_timer += 1    
 
             if boom_timer >= 60:
@@ -890,11 +927,15 @@ while running:
                     boss.boss_animation(scaled_screen)
 
                 if enemy_lvl_timer == 2 and not(boss.is_buffed):
-                    boss.boss_health *= 2
+                    boss.boss_health += boss.boss_health * 2
                     boss.boss_max_health = boss.boss_health
                     boss.is_buffed = True
                 if enemy_lvl_timer == 3 and not(boss.is_buffed):
-                    boss.boss_health *= 3
+                    boss.boss_health += boss.boss_health * 3
+                    boss.boss_max_health = boss.boss_health
+                    boss.is_buffed = True
+                if enemy_lvl_timer == 4 and not(boss.is_buffed):
+                    boss.boss_health += boss.boss_health * 15
                     boss.boss_max_health = boss.boss_health
                     boss.is_buffed = True
 
@@ -924,6 +965,9 @@ while running:
                     player.player_score += 10
                     boss_punch_sound.stop()
                     bosses.remove(boss)
+                else:
+                    boss_punch_sound.stop()
+                    boss_punch_timer = 180
 
             player.update_ultimate()
 
