@@ -11,7 +11,7 @@ is_paused = False
 screen_info = pygame.display.Info()
 screen_x = 1000
 screen_y = 800
-screen = pygame.display.set_mode((screen_x, screen_y), pygame.RESIZABLE)
+screen = pygame.display.set_mode((screen_x, screen_y))
 pygame.display.set_caption("Chill Guy Defence")
 clock = pygame.time.Clock()
 
@@ -89,7 +89,7 @@ def toggle_fullscreen():
     if fullscreen:
         screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     else:
-        screen = pygame.display.set_mode((base_screen_x, base_screen_y), pygame.RESIZABLE)
+        screen = pygame.display.set_mode((base_screen_x, base_screen_y))
 
     for button in buttons.values():
         button.update_rect()
@@ -595,6 +595,7 @@ def load_game_resources():
     buttons = create_buttons()
     
     enemy_die_sound = pygame.mixer.Sound("enemy_die.mp3")
+    enemy_die_sound.set_volume(0.7)
     tower_hit = pygame.mixer.Sound("hit_tower.mp3")
     tower_hit.set_volume(0.5)
     ult_sound = pygame.mixer.Sound("ultimate.mp3")
@@ -602,7 +603,6 @@ def load_game_resources():
     punch_sound = pygame.mixer.Sound("punch.mp3")
     punch_sound.set_volume(0.3)
     boss_punch_sound = pygame.mixer.Sound("boss_punch.mp3")
-    boss_punch_sound.set_volume(0.5)
     steps_sound = pygame.mixer.Sound("steps.mp3")
     back_music1 = pygame.mixer.Sound("back_music1.mp3")
     back_music1.set_volume(0.09)
@@ -662,11 +662,6 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 mouse_clicked = True
-        if event.type == pygame.VIDEORESIZE and not fullscreen:
-            screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
-            for button in buttons.values():
-                button.update_rect()
-
     screen.fill((0, 0, 0))
     scaled_screen.fill((0, 0, 0))
     keys = pygame.key.get_pressed()
@@ -677,7 +672,7 @@ while running:
         if menu_music_timer == 0:
             menu_music.play() 
         menu_music_timer += 1
-        if menu_music_timer == 450:
+        if menu_music_timer == 460:
             menu_music_timer = 0         
     if game_state == MENU:   
         if fullscreen:
