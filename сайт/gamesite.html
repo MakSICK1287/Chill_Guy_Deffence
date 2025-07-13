@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Chill Guy Defence - Официальный сайт</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f0f2f5;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    h1, h2 {
+      color: #2c3e50;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2.5em;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+    .section {
+      margin-bottom: 50px;
+      padding: 20px;
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 25px;
+      justify-content: center;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      width: 300px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+    .card h2 {
+      margin-top: 0;
+      color: #3498db;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 10px;
+    }
+    .info {
+      background: #f8f9fa;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 8px;
+      border-left: 3px solid #3498db;
+    }
+    .menu-options {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 25px;
+    }
+    .menu-btn {
+      padding: 10px 20px;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
+    .menu-btn:hover {
+      background: #2980b9;
+    }
+    .screenshot {
+      max-width: 100%;
+      height: auto;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      margin: 15px 0;
+      border: 1px solid #eee;
+    }
+    .screenshots-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 30px;
+      margin: 30px 0;
+    }
+    .screenshot-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      text-align: center;
+      width: 320px;
+      transition: transform 0.3s ease;
+    }
+    .screenshot-card:hover {
+      transform: scale(1.02);
+    }
+    .screenshot-title {
+      font-weight: bold;
+      margin-bottom: 15px;
+      font-size: 1.2em;
+      color: #2c3e50;
+    }
+    .character-image {
+      max-width: 250px;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+      margin: 20px auto;
+      display: block;
+      border: 3px solid #3498db;
+    }
+    .character-card {
+      position: relative;
+      overflow: hidden;
+    }
+    .character-equation {
+      position: absolute;
+      bottom: 15px;
+      right: 15px;
+      background: rgba(52, 152, 219, 0.9);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .game-title {
+      background: linear-gradient(135deg, #3498db, #2ecc71);
+      color: white;
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      margin-bottom: 40px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .game-title h1 {
+      margin: 0;
+      font-size: 3em;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    .game-title h2 {
+      margin: 10px 0 0;
+      font-weight: normal;
+      opacity: 0.9;
+    }
+    .feature-icon {
+      font-size: 2em;
+      color: #3498db;
+      margin-bottom: 15px;
+    }
+    @media (max-width: 768px) {
+      .card, .screenshot-card {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-title">
+    <h1>Chill Guy Defence</h1>
+    <h2>Полное руководство и информация об игре</h2>
+  </div>
+
+  <div class="section">
+    <div class="grid">
+      <div class="card">
+        <h1>Обзор Геймплея</h1>
+        <p>Chill Guy Defence - это захватывающая стратегическая игра в жанре tower defense, где вы защищаете свой замок от волн врагов. Используйте различные усиления и способности для укрепления обороны и достижения высоких результатов.</p>
+        <div class="info">Жанр: Tower Defense</div>
+        <div class="info">Стиль: Стратегия в реальном времени</div>
+        <div class="info">Сложность: Прогрессирующая</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h1>Игровые Скриншоты</h1>
+    <div class="screenshots-container">
+      <div class="screenshot-card">
+        <div class="screenshot-title">Главное меню</div>
+        <img src="Снимок экрана (5).png" alt="Главное меню Chill Guy Defence" class="screenshot">
+        <p>Основное меню с опциями: Играть, Настройки, Выход. Простой и интуитивно понятный интерфейс.</p>
+      </div>
+      
+      <div class="screenshot-card">
+        <div class="screenshot-title">Игровой процесс</div>
+        <img src="Снимок экрана (7).png" alt="Игровой процесс Chill Guy Defence" class="screenshot">
+        <p>Интерфейс во время игры: здоровье (21), сила (x1.2), ультимативная способность (готова), счет (3) и уровень (0).</p>
+      </div>
+      
+      <div class="screenshot-card">
+        <div class="screenshot-title">Экран завершения</div>
+        <img src="Снимок экрана (8).png" alt="Конец игры Chill Guy Defence" class="screenshot">
+        <p>Экран Game Over с итоговым счетом (11) и опциями: Перезапуск, Главное меню.</p>
+      </div>
+      
+      <div class="screenshot-card">
+        <div class="screenshot-title">Настройки игры</div>
+        <img src="Снимок экрана (3).png" alt="Настройки Chill Guy Defence" class="screenshot">
+        <p>Меню настроек с выбором режима экрана: Оконный или Полноэкранный.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h1>Персонажи и Враги</h1>
+    <div class="grid">
+      <div class="card character-card">
+        <h2>Главный Персонаж</h2>
+        <img src="image_l.png" alt="Главный персонаж Chill Guy Defence" class="character-image">
+        <p>Храбрый защитник замка, известный как Chill Guy, оснащенный уникальными математическими способностями для защиты крепости.</p>
+        <div class="info">Роль: Главный защитник</div>
+        <div class="info">Ульта:мгновенное убийство врагов</div>
+        <div class="info">Усиления: Увеличение скорости, Увеличение силы, Увеличение здоровья</div>
+      </div>
+      
+      <div class="card">
+        <h2>Волны Врагов</h2>
+        <p>Сталкивайтесь с все более сложными волнами врагов, каждый тип имеет уникальные характеристики и слабости.</p>
+        
+        <div class="info">Типы: Тун тун тун саур (танк), Тралалейло (быстрый)</div>
+        <div class="info">Сложность: Возрастает с каждым уровнем</div>
+        <div class="info">Награда: Очки</div>
+        <div class="info">Особенность: Каждый уровень - босс</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h1>Битвы с Боссами</h1>
+    <div class="grid">
+      <div class="card">
+        <h2>Босс Осады Замка</h2>
+        <p>Грозный враг, появляющийся на каждом 5-м уровне, требующий стратегического планирования для победы.</p>
+        <div class="info">Здоровье: 2000 HP (увеличивается с уровнем)</div>
+        <div class="info">Урон: 10 HP каждые 3 секунды</div>
+        <div class="info">Награда: Бонусные Очки +10</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h1>Усиления и Бонусы</h1>
+    <div class="grid">
+      <div class="card">
+        <h2>Множитель Силы</h2>
+        <p>Увеличивает урон. Отображается как "Power x1.2" в интерфейсе игры.</p>
+        <div class="info">Эффект: +20% Урона</div>
+        <div class="info">Длительность: Постоянно</div>
+      </div>
+      <div class="card">
+        <h2>Ультимативная Способность</h2>
+        <p>Особая способность, которая становится доступной после зарядки.</p>
+        <div class="info">Статус: "Ultimate READY" когда готова</div>
+        <div class="info">Эффект: Урон по области</div>
+        <div class="info">Перезарядка: 15 секунд</div>
+      </div>
+      <div class="card">
+        <h2>Восстановление Здоровья</h2>
+        <p>Восстанавливает очки здоровья при сборе.</p>
+        <div class="info">Количество: 1-2 HP</div>
+        <div class="info">Максимум: 25 HP</div>
+      </div>
+      <div class="card">
+        <h2>Усилители Скорости</h2>
+        <p>Увеличивают скорость движения и атаки.</p>
+        <div class="info">Эффект: +50% Скорости</div>
+        <div class="info">Длительность: 10 секунд</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h1>Особенности Игры</h1>
+    <div class="grid">
+      <div class="card">
+        <h2>Прогрессивная Сложность</h2>
+        <p>Игра адаптируется под ваш уровень мастерства, предлагая все более сложные вызовы.</p>
+        <div class="info">Динамическая сложность</div>
+      </div>
+      <div class="card">
+        <h2>Настройки</h2>
+        <div class="info">Режимы экрана</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="menu-options">
+      <button class="menu-btn">Скачать игру</button>
+      <button class="menu-btn">Сообщество</button>
+      <button class="menu-btn">Поддержка</button>
+    </div>
+  </div>
+
+</body>
+</html>
